@@ -1,9 +1,10 @@
 {
   "name": "@repo/jwt",
   "version": "1.0.0",
-   "main": "./dist/index.js",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
+    ".": "./dist/config.js",
     "./config": "./dist/config.js",
     "./generateJWT": "./dist/generateJwtToken.js"
   },
