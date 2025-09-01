@@ -13,6 +13,8 @@
   "description": "",
   "dependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@repo/db": "workspace:*",
+    "@repo/zod": "workspace:*",
     "dotenv": "^17.2.1",
     "express": "^5.1.0"
   },
