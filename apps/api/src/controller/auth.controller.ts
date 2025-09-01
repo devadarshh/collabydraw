@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { registerSchema } from "@repo/zod/schema";
+import { registerSchema, loginSchema } from "@repo/zod/schema";
 import generateJWTToken from "@repo/jwt/generateJWT";
 import { prisma } from "@repo/db/prisma";
 
@@ -45,6 +45,60 @@ export const handleRegisterUser = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Registration error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+    });
+  }
+};
+
+export const handleLoginUser = async (req: Request, res: Response) => {
+  try {
+    // fetch user email and password
+    // zod validation
+    // check is user existed
+    // if user does not exist then return
+    // if yes then rehash the passowrd
+    // if passowrd is wronng return
+    // generate a jwt token
+    // return response
+
+    const { email, password } = req.body;
+    const parsed = loginSchema.safeParse({ email, password });
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation Failed",
+        errors: parsed.error,
+      });
+    }
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User does not exist!",
+      });
+    }
+    const isPasswordValid = await bcrypt.compare(
+      password,
+      user?.password as string
+    );
+    if (!isPasswordValid) {
+      return res
+        .status(401)
+        .json({ success: "false", message: "Invalid Password " });
+    }
+    const token = generateJWTToken({ id: user.id, email: user.email });
+    return res.json({
+      success: true,
+      message: "Login successful",
+      data: { id: user.id, name: user.name, email: user.email },
+      token,
+    });
+  } catch (error) {
+    console.error("Sign In error:", error);
     return res.status(500).json({
       success: false,
       message: "Something went wrong",
