@@ -1,35 +1,27 @@
-import { JWT_SECRET } from "@repo/jwt/config";
-import { jwt } from "@repo/jwt";
 import { NextFunction, Request, Response } from "express";
+import { jwt } from "@repo/jwt";
 
 interface AuthRequest extends Request {
   user?: { id: string; email: string };
 }
-export const protectedRoute = async (
+
+export function protectedRoute(
   req: AuthRequest,
   res: Response,
   next: NextFunction
-) => {
+) {
   try {
-    const authHeader = req.headers["authorization"] ?? "";
-    if (!authHeader) {
-      return res
-        .status(401)
-        .json({ message: "Authorization header is missing" });
-    }
-
-    const token = authHeader.split("")[1];
+    const token = req.query.token as string;
     if (!token) {
       return res.status(401).json({ message: "Token is missing" });
     }
-
-    const decoded = jwt.verify(token, JWT_SECRET as string) as {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY!) as {
       id: string;
       email: string;
     };
-    req.user = decoded;
+    req.user = { id: decoded.id, email: decoded.email };
     next();
-  } catch (error) {
+  } catch (err) {
     return res.status(401).json({ message: "Invalid or expired token" });
   }
-};
+}

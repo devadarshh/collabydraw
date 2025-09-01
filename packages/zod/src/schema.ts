@@ -16,3 +16,7 @@ export const loginSchema = z.object({
     .string()
     .min(3, { message: "Password must be at least 3 characters long." }),
 });
+
+export const createRoomSchema = z.object({
+  userId: z.string({ message: "Invalid id " }),
+});

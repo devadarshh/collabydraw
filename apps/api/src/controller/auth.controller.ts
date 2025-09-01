@@ -54,15 +54,6 @@ export const handleRegisterUser = async (req: Request, res: Response) => {
 
 export const handleLoginUser = async (req: Request, res: Response) => {
   try {
-    // fetch user email and password
-    // zod validation
-    // check is user existed
-    // if user does not exist then return
-    // if yes then rehash the passowrd
-    // if passowrd is wronng return
-    // generate a jwt token
-    // return response
-
     const { email, password } = req.body;
     const parsed = loginSchema.safeParse({ email, password });
     if (!parsed.success) {
