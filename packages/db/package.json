@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "exports": {
-    "./client": "./src/client.ts"
+    "./prisma": "./src/client.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.15.0",

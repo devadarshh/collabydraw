@@ -1,11 +1,15 @@
 {
   "name": "@repo/jwt",
   "version": "1.0.0",
-  "main": "index.js",
+   "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    "./config": "./src/config.ts"
+    "./config": "./dist/config.js",
+    "./generateJWT": "./dist/generateJwtToken.js"
   },
-  "scripts": {},
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
   "dependencies": {
     "@repo/typescript-config": "workspace:*",
     "@types/node": "^22.10.5",
