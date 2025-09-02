@@ -21,10 +21,19 @@ type Room = {
   createdAt: number;
 };
 
-type ClientMessage = { type: "JOIN_ROOM"; roomId: string };
+type ClientMessage =
+  | { type: "JOIN_ROOM"; roomId: string }
+  | { type: "LEAVE_ROOM"; roomId: string };
 
 type ServerMessage =
   | { type: "ROOM_JOINED"; roomId: string; message: string }
+  | { type: "ROOM_LEAVED"; roomId: string; message: string }
+  | {
+      type: "USER_LEFT";
+      userId: string;
+      userName: string;
+      participants: { userId: string; userName: string }[];
+    }
   | { type: "ERROR"; message: string };
 
 let users: User[] = [];
@@ -108,10 +117,6 @@ wss.on("connection", (ws, req) => {
         return;
       }
 
-      // TO DO : get all participants present in the room
-
-      // TO DO : get all the SHAPES/CHATS IN THE ROOM
-
       let room = rooms.find((r) => r.roomId === roomId);
 
       if (!room) {
@@ -122,6 +127,7 @@ wss.on("connection", (ws, req) => {
           createdAt: Date.now(),
         };
         rooms.push(room);
+        console.log(`${user.userName} is the admin of new room ${roomId}`);
       }
 
       const userAlreadyInRoom = room.users.some(
@@ -135,6 +141,7 @@ wss.on("connection", (ws, req) => {
       ws.send(
         JSON.stringify({
           type: "ROOM_JOINED",
+          roomId,
           message: "Room Joined Successfully",
         })
       );
@@ -142,7 +149,67 @@ wss.on("connection", (ws, req) => {
       const participants = getCurrentParticipantsInRoom(roomId);
 
       console.log(`${user.userName} joined room ${roomId}`);
-      console.log("Participants present in this room is ", participants);
+      console.log("Participants present in this room:", participants);
+    }
+
+    if (parsedData.type === "LEAVE_ROOM") {
+      const isRoomExist = await prisma.room.findUnique({
+        where: { id: roomId },
+      });
+
+      if (!isRoomExist) {
+        console.error("No Room Id Found!");
+        ws.send(
+          JSON.stringify({ type: "ERROR", message: "Room does not exist" })
+        );
+        return;
+      }
+
+      let room = rooms.find((r) => r.roomId === roomId);
+      if (!room) {
+        console.error("No Room found for this roomId");
+        return;
+      }
+
+      room.users = room.users.filter((u) => u.userId !== user.userId);
+      user.roomId = null;
+
+      if (room.admin === user.userId) {
+        if (room.users.length > 0) {
+          const newAdmin = room.users[0];
+          if (newAdmin) {
+            room.admin = newAdmin.userId;
+            console.log(
+              `${newAdmin.userName} is now the admin of room ${roomId}`
+            );
+          }
+        } else {
+          rooms = rooms.filter((r) => r.roomId !== room.roomId);
+          console.log(`Room ${roomId} deleted because it is empty`);
+        }
+      }
+
+      ws.send(
+        JSON.stringify({
+          type: "ROOM_LEAVED",
+          roomId,
+          message: "Room Leaved Successfully",
+        })
+      );
+
+      const participants = getCurrentParticipantsInRoom(roomId);
+      room.users.forEach((u) => {
+        u.ws.send(
+          JSON.stringify({
+            type: "USER_LEFT",
+            userId: user.userId,
+            userName: user.userName,
+            participants,
+          })
+        );
+      });
+      console.log(`${user.userName} left room ${roomId}`);
+      console.log("Participants after leaving:", participants);
     }
   });
 });
