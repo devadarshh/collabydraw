@@ -15,7 +15,6 @@ export const handleRegisterUser = async (req: Request, res: Response) => {
         errors: parsed.error,
       });
     }
-
     const userExisted = await prisma.user.findFirst({
       where: { email },
     });
@@ -34,8 +33,11 @@ export const handleRegisterUser = async (req: Request, res: Response) => {
         password: hashedPassword,
       },
     });
-
-    const token = generateJWTToken({ id: newUser.id, email: newUser.email });
+    const token = generateJWTToken({
+      id: newUser.id,
+      email: newUser.email,
+      name: newUser.name,
+    });
 
     return res.status(201).json({
       success: true,
@@ -81,7 +83,12 @@ export const handleLoginUser = async (req: Request, res: Response) => {
         .status(401)
         .json({ success: "false", message: "Invalid Password " });
     }
-    const token = generateJWTToken({ id: user.id, email: user.email });
+
+    const token = generateJWTToken({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+    });
     return res.json({
       success: true,
       message: "Login successful",
