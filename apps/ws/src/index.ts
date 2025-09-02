@@ -24,11 +24,11 @@ type Room = {
 type ClientMessage = { type: "JOIN_ROOM"; roomId: string };
 
 type ServerMessage =
-  | { type: "ROOM_JOINED"; roomId: string }
+  | { type: "ROOM_JOINED"; roomId: string; message: string }
   | { type: "ERROR"; message: string };
 
-const users: Map<string, User> = new Map();
-const rooms: Map<string, Room> = new Map();
+let users: User[] = [];
+let rooms: Room[] = [];
 
 if (!process.env.JWT_SECRET_KEY) {
   throw new Error("JWT_SECRET_KEY is ABSOLUTELY REQUIRED");
@@ -61,7 +61,7 @@ function authUser(token: string) {
 }
 
 wss.on("connection", (ws, req) => {
-  console.log("User Connected!");
+  ws.send("SUBSCRIBED");
   const url = req.url;
   if (!url) {
     console.error("No Valid Url found in the request");
@@ -69,9 +69,9 @@ wss.on("connection", (ws, req) => {
   }
   const queryParams = new URLSearchParams(url?.split("?")[1]);
   const token = queryParams.get("token");
-  const initialRoomId = queryParams.get("room");
+  const roomId = queryParams.get("room");
 
-  if (!token || !initialRoomId) {
+  if (!token || !roomId) {
     console.error("No Valid Token or Room ID Found");
     ws.close();
     return;
@@ -84,21 +84,20 @@ wss.on("connection", (ws, req) => {
     return;
   }
 
-  // store user in memory
   const user: User = {
     userId: userData.userId,
     userName: userData.userName,
     ws,
     roomId: null,
   };
-  users.set(user.userId, user);
+  users.push(user);
 
   ws.on("message", async (data) => {
     const parsedData: ClientMessage = JSON.parse(data.toString());
 
     if (parsedData.type === "JOIN_ROOM") {
       const isRoomExist = await prisma.room.findUnique({
-        where: { id: parsedData.roomId },
+        where: { id: roomId },
       });
 
       if (!isRoomExist) {
@@ -109,25 +108,50 @@ wss.on("connection", (ws, req) => {
         return;
       }
 
-      let room = rooms.get(parsedData.roomId);
+      // TO DO : get all participants present in the room
+
+      // TO DO : get all the SHAPES/CHATS IN THE ROOM
+
+      let room = rooms.find((r) => r.roomId === roomId);
 
       if (!room) {
         room = {
-          roomId: parsedData.roomId,
+          roomId,
           users: [],
           admin: user.userId,
           createdAt: Date.now(),
         };
-        rooms.set(parsedData.roomId, room);
+        rooms.push(room);
       }
 
-      room.users.push(user);
-      user.roomId = parsedData.roomId;
+      const userAlreadyInRoom = room.users.some(
+        (u) => u.userId === user.userId
+      );
+      if (!userAlreadyInRoom) {
+        room.users.push(user);
+        user.roomId = roomId;
+      }
 
       ws.send(
-        JSON.stringify({ type: "ROOM_JOINED", roomId: parsedData.roomId })
+        JSON.stringify({
+          type: "ROOM_JOINED",
+          message: "Room Joined Successfully",
+        })
       );
-      console.log(`${user.userName} joined room ${parsedData.roomId}`);
+
+      const participants = getCurrentParticipantsInRoom(roomId);
+
+      console.log(`${user.userName} joined room ${roomId}`);
+      console.log("Participants present in this room is ", participants);
     }
   });
 });
+
+function getCurrentParticipantsInRoom(roomId: string) {
+  const room = rooms.find((r) => r.roomId === roomId);
+  if (!room) return [];
+  return room.users.map((u) => ({
+    userId: u.userId,
+    userName: u.userName,
+  }));
+}
