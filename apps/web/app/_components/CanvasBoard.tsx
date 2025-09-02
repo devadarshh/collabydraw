@@ -175,6 +175,7 @@ const CanvasBoard = () => {
           onAddShape={handleAddShapes}
         />
       </div>
+
       <canvas id="canvas" ref={canvasRef} className="w-full h-full" />
     </div>
   );
