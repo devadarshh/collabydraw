@@ -8,6 +8,7 @@ import { ShapeType } from "../../types";
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { zoomIn, zoomOut, resetZoom } from "@/utils/zoomUtils";
 import { ZoomControl } from "./ZoomControl";
+import { createArrow } from "@/utils/createArrowUtils";
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -29,6 +30,8 @@ const CanvasBoard = () => {
     if (theme === "dark") return themeColors.dark;
     return themeColors.light;
   };
+
+  // init canvas
   useEffect(() => {
     if (canvasRef.current) {
       const initCanvas = new fabric.Canvas(canvasRef.current, {
@@ -38,7 +41,6 @@ const CanvasBoard = () => {
         backgroundColor: getCanvasBg(),
       });
       applyFabricConfig(initCanvas);
-
       setCanvas(initCanvas);
 
       const handleResize = () => {
@@ -48,7 +50,6 @@ const CanvasBoard = () => {
       };
 
       window.addEventListener("resize", handleResize);
-
       return () => {
         window.removeEventListener("resize", handleResize);
         initCanvas.dispose();
@@ -56,6 +57,7 @@ const CanvasBoard = () => {
     }
   }, []);
 
+  // grab/pan
   useEffect(() => {
     if (!canvas) return;
     let isDragging = false;
@@ -68,7 +70,6 @@ const CanvasBoard = () => {
         const evt = opt.e as MouseEvent;
         lastPosX = evt.clientX;
         lastPosY = evt.clientY;
-
         canvas.selection = false;
         canvas.defaultCursor = "grabbing";
       }
@@ -84,13 +85,13 @@ const CanvasBoard = () => {
         lastPosY = e.clientY;
       }
     };
-
     const handleMouseUp = () => {
       if (mode === "grab") {
         isDragging = false;
         canvas.defaultCursor = "grab";
       }
     };
+
     canvas.on("mouse:down", handleMouseDown);
     canvas.on("mouse:move", handleMouseMove);
     canvas.on("mouse:up", handleMouseUp);
@@ -102,36 +103,32 @@ const CanvasBoard = () => {
     };
   }, [canvas, mode]);
 
+  // zoom with ctrl+wheel
   useEffect(() => {
     if (!canvas) return;
-
     const wheelHandler = (opt: fabric.TEvent<WheelEvent>) => {
       const evt = opt.e as WheelEvent;
-
       if (!evt.ctrlKey && !evt.metaKey) return;
 
-      const delta = opt.e.deltaY;
+      const delta = evt.deltaY;
       let zoom = canvas.getZoom();
-
       zoom *= 1 - delta / 1000;
       if (zoom > 5) zoom = 5;
       if (zoom < 0.5) zoom = 0.5;
 
-      const point = new fabric.Point(opt.e.offsetX, opt.e.offsetY);
+      const point = new fabric.Point(evt.offsetX, evt.offsetY);
       canvas.zoomToPoint(point, zoom);
 
-      opt.e.preventDefault();
-      opt.e.stopPropagation();
+      evt.preventDefault();
+      evt.stopPropagation();
       setZoom(Math.round(canvas.getZoom() * 100));
     };
 
     canvas.on("mouse:wheel", wheelHandler);
-
-    return () => {
-      canvas.off("mouse:wheel", wheelHandler);
-    };
+    return () => canvas.off("mouse:wheel", wheelHandler);
   }, [canvas]);
 
+  // keyboard shortcuts
   useEffect(() => {
     const handleShortcutKeys = (e: KeyboardEvent) => {
       switch (e.key) {
@@ -172,23 +169,21 @@ const CanvasBoard = () => {
     return () => window.removeEventListener("keydown", handleShortcutKeys);
   }, [canvas]);
 
+  // drawing logic
   useEffect(() => {
-    if (!canvas) {
-      return;
-    }
-    const handleMouseDown = (opt: fabric.TEvent<fabric.TPointerEvent>) => {
-      if (!canvas) return;
+    if (!canvas) return;
 
+    let arrowLine: fabric.Line | null = null;
+    let arrowHead: fabric.Triangle | null = null;
+
+    const handleMouseDown = (opt: fabric.TEvent<fabric.TPointerEvent>) => {
       const pointer = canvas.getPointer(opt.e as MouseEvent);
 
       if (mode === "eraser") {
         const target = canvas.findTarget(opt.e as MouseEvent);
-        if (target) {
-          canvas.remove(target);
-        }
+        if (target) canvas.remove(target);
         return;
       }
-
       if (mode !== "draw" || !drawingShape) return;
 
       startPoint.current = { x: pointer.x, y: pointer.y };
@@ -208,6 +203,57 @@ const CanvasBoard = () => {
             selectable: false,
           });
           break;
+        case "ellipse":
+          shape = new fabric.Ellipse({
+            left: pointer.x,
+            top: pointer.y,
+            rx: 0,
+            ry: 0,
+            strokeWidth: 2,
+            stroke: "blue",
+            fill: "rgba(0,0,0,0)",
+            selectable: true,
+            objectCaching: false,
+            originX: "center",
+            originY: "center",
+          });
+          break;
+        case "line":
+          shape = new fabric.Line(
+            [pointer.x, pointer.y, pointer.x, pointer.y],
+            {
+              stroke: "blue",
+              strokeWidth: 3,
+              selectable: false,
+              objectCaching: false,
+              evented: false,
+            }
+          );
+          break;
+        case "arrow":
+          // create only line initially
+          arrowLine = new fabric.Line(
+            [pointer.x, pointer.y, pointer.x, pointer.y],
+            {
+              stroke: "blue",
+              strokeWidth: 3,
+              selectable: false,
+              evented: false,
+            }
+          );
+          arrowHead = new fabric.Triangle({
+            left: pointer.x,
+            top: pointer.y,
+            originX: "center",
+            originY: "center",
+            width: 15,
+            height: 20,
+            fill: "blue",
+            selectable: false,
+            evented: false,
+          });
+          canvas.add(arrowLine, arrowHead);
+          return;
       }
 
       if (shape) {
@@ -217,11 +263,11 @@ const CanvasBoard = () => {
     };
 
     const handleMouseMove = (opt: fabric.TEvent<fabric.TPointerEvent>) => {
-      if (mode !== "draw" || !drawingShape || !tempShape || !startPoint.current)
-        return;
+      if (mode !== "draw" || !drawingShape || !startPoint.current) return;
 
       const pointer = canvas.getPointer(opt.e as MouseEvent);
       const { x, y } = startPoint.current;
+
       if (drawingShape === "rectangle" && tempShape instanceof fabric.Rect) {
         tempShape.set({
           width: Math.abs(pointer.x - x),
@@ -230,33 +276,77 @@ const CanvasBoard = () => {
           top: Math.min(pointer.y, y),
         });
       }
+      if (drawingShape === "ellipse" && tempShape instanceof fabric.Ellipse) {
+        const rx = Math.abs(pointer.x - x) / 2;
+        const ry = Math.abs(pointer.y - y) / 2;
+        tempShape.set({
+          rx,
+          ry,
+          left: (pointer.x + x) / 2,
+          top: (pointer.y + y) / 2,
+        });
+      }
+      if (drawingShape === "line" && tempShape instanceof fabric.Line) {
+        tempShape.set({ x2: pointer.x, y2: pointer.y });
+      }
 
-      tempShape.setCoords();
+      if (drawingShape === "arrow" && arrowLine && arrowHead) {
+        arrowLine.set({ x2: pointer.x, y2: pointer.y });
+        arrowHead.set({
+          left: pointer.x,
+          top: pointer.y,
+          angle:
+            (Math.atan2(pointer.y - arrowLine.y1!, pointer.x - arrowLine.x1!) *
+              180) /
+              Math.PI +
+            90,
+        });
+      }
+
       canvas.renderAll();
     };
 
     const handleMouseUp = () => {
       if (mode !== "draw") return;
-      if (tempShape) {
-        tempShape.set({
+
+      if (drawingShape === "arrow" && arrowLine && arrowHead) {
+        // group line + head as a single arrow object
+        const arrowGroup = new fabric.Group([arrowLine, arrowHead], {
           selectable: false,
           evented: false,
-        });
+        }) as fabric.Group & { line: fabric.Line; head: fabric.Triangle };
+
+        arrowGroup.line = arrowLine;
+        arrowGroup.head = arrowHead;
+
+        canvas.remove(arrowLine);
+        canvas.remove(arrowHead);
+        canvas.add(arrowGroup);
+
+        // setTempShape(null);
+        arrowLine = null;
+        arrowHead = null;
+        startPoint.current = null;
+      } else if (tempShape) {
+        tempShape.set({ selectable: false, evented: false });
         tempShape.setCoords();
         setTempShape(null);
         startPoint.current = null;
       }
     };
+
     canvas.on("mouse:down", handleMouseDown);
     canvas.on("mouse:move", handleMouseMove);
     canvas.on("mouse:up", handleMouseUp);
+
     return () => {
       canvas.off("mouse:down", handleMouseDown);
       canvas.off("mouse:move", handleMouseMove);
       canvas.off("mouse:up", handleMouseUp);
     };
-  }, [canvas, drawingShape, tempShape, mode]);
+  }, [canvas, drawingShape, mode, tempShape]);
 
+  // toolbar handlers
   const handleAddShapes = (type: ShapeType) => {
     if (type === "select") {
       setMode("select");
@@ -298,20 +388,16 @@ const CanvasBoard = () => {
     } else if (type === "freeDraw") {
       setMode("freeDraw");
       setDrawingShape("freeDraw");
-
       if (canvas) {
         canvas.isDrawingMode = true;
         canvas.selection = false;
         canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-
         canvas.freeDrawingBrush.width = 3;
         canvas.freeDrawingBrush.color = "blue";
-
         canvas.forEachObject((obj) => {
           obj.selectable = false;
           obj.evented = false;
         });
-
         if (canvas.upperCanvasEl) {
           canvas.upperCanvasEl.style.cursor = "crosshair";
         }
@@ -331,6 +417,7 @@ const CanvasBoard = () => {
     }
   };
 
+  // theme bg
   useEffect(() => {
     if (canvas) {
       canvas.backgroundColor = getCanvasBg();
