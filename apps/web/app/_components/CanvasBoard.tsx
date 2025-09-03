@@ -197,6 +197,7 @@ const CanvasBoard = () => {
       setMode("eraser");
       setDrawingShape("eraser");
       if (canvas) {
+        canvas.isDrawingMode = false;
         canvas.selection = false;
         canvas.forEachObject((obj) => {
           obj.evented = true;
@@ -204,12 +205,12 @@ const CanvasBoard = () => {
         });
       }
     } else if (type === "freeDraw") {
-      setMode("draw");
+      setMode("freeDraw");
       setDrawingShape("freeDraw");
 
       if (canvas) {
+        canvas.isDrawingMode = true; // enable free draw
         canvas.selection = false;
-        canvas.isDrawingMode = true;
         canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
 
         canvas.freeDrawingBrush.width = 3;
