@@ -6,6 +6,13 @@ import { useTheme } from "next-themes";
 import ToolBar from "./ToolBar";
 import { ShapeType } from "../../types";
 import { applyFabricConfig } from "@/config/fabricConfig";
+import {
+  handleMouseWheelZoom,
+  zoomIn,
+  zoomOut,
+  resetZoom,
+} from "@/utils/zoomUtils";
+import { ZoomControl } from "./ZoomControl";
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -52,6 +59,19 @@ const CanvasBoard = () => {
       };
     }
   }, []);
+
+  useEffect(() => {
+    if (!canvas) return;
+
+    const wheelHandler = (opt: fabric.TEvent<WheelEvent>) =>
+      handleMouseWheelZoom(opt, canvas);
+
+    canvas.on("mouse:wheel", wheelHandler);
+
+    return () => {
+      canvas.off("mouse:wheel", wheelHandler);
+    };
+  }, [canvas]);
 
   useEffect(() => {
     const handleShortcutKeys = (e: KeyboardEvent) => {
@@ -256,6 +276,12 @@ const CanvasBoard = () => {
         />
       </div>
       <canvas ref={canvasRef} className="w-full h-full" />
+
+      <ZoomControl
+        zoomIn={() => zoomIn(canvas!)}
+        zoomOut={() => zoomOut(canvas!)}
+        resetZoom={() => resetZoom(canvas!)}
+      />
     </div>
   );
 };
