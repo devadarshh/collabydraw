@@ -10,7 +10,9 @@ import { applyFabricConfig } from "@/config/fabricConfig";
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
-  const [mode, setMode] = useState<"select" | "draw" | "erase" | null>(null);
+  const [mode, setMode] = useState<
+    "select" | "draw" | "eraser" | "freeDraw" | null
+  >(null);
   const [drawingShape, setDrawingShape] = useState<ShapeType | null>(null);
   const [tempShape, setTempShape] = useState<fabric.Object | null>(null);
   const startPoint = useRef<{ x: number; y: number } | null>(null);
@@ -52,13 +54,63 @@ const CanvasBoard = () => {
   }, []);
 
   useEffect(() => {
+    const handleShortcutKeys = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case "1":
+          handleAddShapes("select");
+          break;
+        case "2":
+          handleAddShapes("grab");
+          break;
+        case "3":
+          handleAddShapes("rectangle");
+          break;
+        case "4":
+          handleAddShapes("ellipse");
+          break;
+        case "5":
+          handleAddShapes("diamond");
+          break;
+        case "6":
+          handleAddShapes("line");
+          break;
+        case "7":
+          handleAddShapes("freeDraw");
+          break;
+        case "8":
+          handleAddShapes("arrow");
+          break;
+        case "9":
+          handleAddShapes("text");
+          break;
+        case "0":
+          handleAddShapes("eraser");
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", handleShortcutKeys);
+    return () => window.removeEventListener("keydown", handleShortcutKeys);
+  }, [canvas]);
+
+  useEffect(() => {
     if (!canvas) {
       return;
     }
     const handleMouseDown = (opt: fabric.TEvent<fabric.TPointerEvent>) => {
-      if (mode !== "draw" || !drawingShape) return;
+      if (!canvas) return;
 
       const pointer = canvas.getPointer(opt.e as MouseEvent);
+
+      if (mode === "eraser") {
+        const target = canvas.findTarget(opt.e as MouseEvent);
+        if (target) {
+          canvas.remove(target);
+        }
+        return;
+      }
+
+      if (mode !== "draw" || !drawingShape) return;
 
       startPoint.current = { x: pointer.x, y: pointer.y };
 
@@ -140,6 +192,37 @@ const CanvasBoard = () => {
         });
         canvas.defaultCursor = "default";
         canvas.hoverCursor = "move";
+      }
+    } else if (type === "eraser") {
+      setMode("eraser");
+      setDrawingShape("eraser");
+      if (canvas) {
+        canvas.selection = false;
+        canvas.forEachObject((obj) => {
+          obj.evented = true;
+          obj.selectable = false;
+        });
+      }
+    } else if (type === "freeDraw") {
+      setMode("draw");
+      setDrawingShape("freeDraw");
+
+      if (canvas) {
+        canvas.selection = false;
+        canvas.isDrawingMode = true;
+        canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+
+        canvas.freeDrawingBrush.width = 3;
+        canvas.freeDrawingBrush.color = "blue";
+
+        canvas.forEachObject((obj) => {
+          obj.selectable = false;
+          obj.evented = false;
+        });
+
+        if (canvas.upperCanvasEl) {
+          canvas.upperCanvasEl.style.cursor = "crosshair";
+        }
       }
     } else {
       setMode("draw");

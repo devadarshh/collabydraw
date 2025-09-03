@@ -18,6 +18,7 @@ import {
   Hand,
   ArrowRight,
   EraserIcon,
+  PencilIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -59,16 +60,22 @@ const tools: {
   },
   { type: "line", label: "Line", shortcut: "6", icon: <Minus size={16} /> },
   {
+    type: "freeDraw",
+    label: "FreeDraw",
+    shortcut: "7",
+    icon: <PencilIcon size={16} />,
+  },
+  {
     type: "arrow",
     label: "Arrow",
-    shortcut: "7",
+    shortcut: "8",
     icon: <ArrowRight size={16} />,
   },
   { type: "text", label: "Text", shortcut: "9", icon: <Type size={16} /> },
   {
     type: "eraser",
     label: "Eraser",
-    shortcut: "10",
+    shortcut: "0",
     icon: <EraserIcon size={16} />,
   },
 ];
