@@ -4,7 +4,7 @@ import { ShapeType } from "../../types";
 import ToolBar from "./ToolBar";
 import * as fabric from "fabric";
 
-const CanvasBoard2 = () => {
+const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [mode, setMode] = useState<"select" | "draw" | null>(null);
@@ -225,4 +225,4 @@ const CanvasBoard2 = () => {
   );
 };
 
-export default CanvasBoard2;
+export default CanvasBoard;
