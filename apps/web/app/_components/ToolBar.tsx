@@ -2,7 +2,6 @@
 
 import React from "react";
 import { ShapeType } from "../../types";
-import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -16,73 +15,91 @@ import {
   Minus,
   Type,
   MousePointer,
+  Hand,
+  ArrowRight,
+  EraserIcon,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ToolBarProps {
   selectedShape: ShapeType;
   onAddShape: (type: ShapeType) => void;
 }
 
-const shapes: {
+const tools: {
   type: ShapeType;
   label: string;
   shortcut: string;
   icon: React.ReactNode;
 }[] = [
   {
+    type: "select",
+    label: "Select",
+    shortcut: "1",
+    icon: <MousePointer size={16} />,
+  },
+  { type: "grab", label: "Grab", shortcut: "2", icon: <Hand size={16} /> },
+  {
     type: "rectangle",
     label: "Rectangle",
-    shortcut: "R",
+    shortcut: "3",
     icon: <Square size={16} />,
   },
   {
     type: "ellipse",
     label: "Ellipse",
-    shortcut: "E",
+    shortcut: "4",
     icon: <Circle size={16} />,
   },
   {
     type: "diamond",
     label: "Diamond",
-    shortcut: "D",
+    shortcut: "5",
     icon: <Diamond size={16} />,
   },
-  { type: "line", label: "Line", shortcut: "L", icon: <Minus size={16} /> },
-  { type: "text", label: "Text", shortcut: "T", icon: <Type size={16} /> },
+  { type: "line", label: "Line", shortcut: "6", icon: <Minus size={16} /> },
   {
-    type: "select",
-    label: "Select",
-    shortcut: "S",
-    icon: <MousePointer size={16} />,
+    type: "arrow",
+    label: "Arrow",
+    shortcut: "7",
+    icon: <ArrowRight size={16} />,
+  },
+  { type: "text", label: "Text", shortcut: "9", icon: <Type size={16} /> },
+  {
+    type: "eraser",
+    label: "Eraser",
+    shortcut: "10",
+    icon: <EraserIcon size={16} />,
   },
 ];
 
 const ToolBar: React.FC<ToolBarProps> = ({ selectedShape, onAddShape }) => {
   return (
     <TooltipProvider delayDuration={0}>
-      <header className="Tool_Bar flex items-center gap-1 p-1.5 rounded-lg Island bg-white/80 dark:bg-zinc-900 shadow">
-        <div className="flex items-center gap-1 lg:gap-3">
-          {shapes.map((shape) => (
-            <Tooltip key={shape.type}>
+      <header className="flex items-center gap-1.5 p-2 bg-white/90 dark:bg-zinc-900 shadow rounded-lg">
+        <div className="flex items-center gap-1.5">
+          {tools.map((tool) => (
+            <Tooltip key={tool.type}>
               <TooltipTrigger asChild>
-                <Button
-                  variant={selectedShape === shape.type ? "secondary" : "ghost"}
-                  size="icon"
-                  onClick={() => onAddShape(shape.type)}
-                  className={`xl:relative w-[30px] h-[30px] xs670:w-9 xs670:h-9 ${
-                    selectedShape === shape.type
-                      ? "bg-selected-tool-bg-light text-[var(--color-on-primary-container)] dark:bg-selected-tool-bg-dark dark:text-white"
-                      : "text-icon-fill-color hover:text-icon-fill-color dark:text-icon-fill-color-d dark:hover:text-icon-fill-color-d hover:bg-light-btn-hover-bg dark:hover:bg-d-btn-hover-bg"
-                  }`}
+                <div
+                  onClick={() => onAddShape(tool.type)}
+                  className={cn(
+                    "w-10 h-10 flex items-center justify-center rounded-lg cursor-pointer relative transition-all duration-200",
+                    "hover:bg-gray-200 dark:hover:bg-zinc-800",
+                    selectedShape === tool.type
+                      ? "bg-indigo-500 text-white hover:bg-indigo-600"
+                      : "text-gray-600 dark:text-gray-300"
+                  )}
                 >
-                  {shape.icon}
-                  <span className="sr-only">{shape.label}</span>
-                  <span className="hidden xl:block absolute -bottom-1 right-1 text-[11px] text-black/60 dark:text-icon-fill-color-d">
-                    {shape.shortcut}
+                  {tool.icon}
+                  <span className="absolute -bottom-1 right-0.5 text-[9px] text-gray-500 dark:text-gray-400">
+                    {tool.shortcut}
                   </span>
-                </Button>
+                </div>
               </TooltipTrigger>
-              <TooltipContent>{shape.label}</TooltipContent>
+              <TooltipContent side="bottom" className="text-sm">
+                {tool.label}
+              </TooltipContent>
             </Tooltip>
           ))}
         </div>
