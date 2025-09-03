@@ -1,27 +1,23 @@
 "use client";
-import React from "react";
+import React, { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import { useTheme } from "next-themes";
 import ToolBar from "./ToolBar";
 import { ShapeType } from "../../types";
 import { applyFabricConfig } from "@/config/fabricConfig";
-import {
-  handleMouseWheelZoom,
-  zoomIn,
-  zoomOut,
-  resetZoom,
-} from "@/utils/zoomUtils";
+import { zoomIn, zoomOut, resetZoom } from "@/utils/zoomUtils";
 import { ZoomControl } from "./ZoomControl";
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [mode, setMode] = useState<
-    "select" | "draw" | "eraser" | "freeDraw" | null
+    "select" | "draw" | "eraser" | "freeDraw" | "grab" | null
   >(null);
   const [drawingShape, setDrawingShape] = useState<ShapeType | null>(null);
   const [tempShape, setTempShape] = useState<fabric.Object | null>(null);
+  const [zoom, setZoom] = useState<ReactNode>(100);
   const startPoint = useRef<{ x: number; y: number } | null>(null);
   const { theme } = useTheme();
 
@@ -62,9 +58,72 @@ const CanvasBoard = () => {
 
   useEffect(() => {
     if (!canvas) return;
+    let isDragging = false;
+    let lastPosX = 0;
+    let lastPosY = 0;
 
-    const wheelHandler = (opt: fabric.TEvent<WheelEvent>) =>
-      handleMouseWheelZoom(opt, canvas);
+    const handleMouseDown = (opt: fabric.TEvent<fabric.TPointerEvent>) => {
+      if (mode === "grab") {
+        isDragging = true;
+        const evt = opt.e as MouseEvent;
+        lastPosX = evt.clientX;
+        lastPosY = evt.clientY;
+
+        canvas.selection = false;
+        canvas.defaultCursor = "grabbing";
+      }
+    };
+    const handleMouseMove = (opt: fabric.TEvent<fabric.TPointerEvent>) => {
+      if (isDragging && mode === "grab") {
+        const e = opt.e as MouseEvent;
+        const vpt = canvas.viewportTransform!;
+        vpt[4] += e.clientX - lastPosX;
+        vpt[5] += e.clientY - lastPosY;
+        canvas.requestRenderAll();
+        lastPosX = e.clientX;
+        lastPosY = e.clientY;
+      }
+    };
+
+    const handleMouseUp = () => {
+      if (mode === "grab") {
+        isDragging = false;
+        canvas.defaultCursor = "grab";
+      }
+    };
+    canvas.on("mouse:down", handleMouseDown);
+    canvas.on("mouse:move", handleMouseMove);
+    canvas.on("mouse:up", handleMouseUp);
+
+    return () => {
+      canvas.off("mouse:down", handleMouseDown);
+      canvas.off("mouse:move", handleMouseMove);
+      canvas.off("mouse:up", handleMouseUp);
+    };
+  }, [canvas, mode]);
+
+  useEffect(() => {
+    if (!canvas) return;
+
+    const wheelHandler = (opt: fabric.TEvent<WheelEvent>) => {
+      const evt = opt.e as WheelEvent;
+
+      if (!evt.ctrlKey && !evt.metaKey) return;
+
+      const delta = opt.e.deltaY;
+      let zoom = canvas.getZoom();
+
+      zoom *= 1 - delta / 1000;
+      if (zoom > 5) zoom = 5;
+      if (zoom < 0.5) zoom = 0.5;
+
+      const point = new fabric.Point(opt.e.offsetX, opt.e.offsetY);
+      canvas.zoomToPoint(point, zoom);
+
+      opt.e.preventDefault();
+      opt.e.stopPropagation();
+      setZoom(Math.round(canvas.getZoom() * 100));
+    };
 
     canvas.on("mouse:wheel", wheelHandler);
 
@@ -224,12 +283,24 @@ const CanvasBoard = () => {
           obj.selectable = false;
         });
       }
+    } else if (type === "grab") {
+      setMode("grab");
+      setDrawingShape(null);
+      if (canvas) {
+        canvas.isDrawingMode = false;
+        canvas.selection = false;
+        canvas.forEachObject((obj) => {
+          obj.selectable = false;
+          obj.evented = false;
+        });
+        canvas.defaultCursor = "grab";
+      }
     } else if (type === "freeDraw") {
       setMode("freeDraw");
       setDrawingShape("freeDraw");
 
       if (canvas) {
-        canvas.isDrawingMode = true; // enable free draw
+        canvas.isDrawingMode = true;
         canvas.selection = false;
         canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
 
@@ -271,16 +342,28 @@ const CanvasBoard = () => {
     <div className="relative w-screen h-screen">
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
         <ToolBar
-          selectedShape={drawingShape ?? "select"}
+          selectedShape={
+            (drawingShape as ShapeType) ?? (mode as ShapeType) ?? "select"
+          }
           onAddShape={handleAddShapes}
         />
       </div>
       <canvas ref={canvasRef} className="w-full h-full" />
 
       <ZoomControl
-        zoomIn={() => zoomIn(canvas!)}
-        zoomOut={() => zoomOut(canvas!)}
-        resetZoom={() => resetZoom(canvas!)}
+        zoomIn={() => {
+          zoomIn(canvas!);
+          setZoom(Math.round(canvas!.getZoom() * 100));
+        }}
+        zoomOut={() => {
+          zoomOut(canvas!);
+          setZoom(Math.round(canvas!.getZoom() * 100));
+        }}
+        resetZoom={() => {
+          resetZoom(canvas!);
+          setZoom(100);
+        }}
+        zoom={zoom}
       />
     </div>
   );
