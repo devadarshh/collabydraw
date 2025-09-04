@@ -8,7 +8,6 @@ import { ShapeType } from "../../types";
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { zoomIn, zoomOut, resetZoom } from "@/utils/zoomUtils";
 import { ZoomControl } from "./ZoomControl";
-import { createArrow } from "@/utils/createArrowUtils";
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -231,7 +230,6 @@ const CanvasBoard = () => {
           );
           break;
         case "arrow":
-          // create only line initially
           arrowLine = new fabric.Line(
             [pointer.x, pointer.y, pointer.x, pointer.y],
             {
@@ -253,6 +251,51 @@ const CanvasBoard = () => {
             evented: false,
           });
           canvas.add(arrowLine, arrowHead);
+          break;
+        case "text":
+          const text = new fabric.IText("", {
+            left: pointer.x,
+            top: pointer.y,
+            fontFamily: "Arial",
+            fontSize: 24,
+            fill: "blue",
+            editable: true,
+            width: 150,
+            height: 40,
+            backgroundColor: "rgba(0,0,0,0.05)",
+            padding: 5,
+          });
+          canvas.add(text);
+          canvas.setActiveObject(text);
+          text.enterEditing();
+          text.hiddenTextarea?.focus();
+          startPoint.current = null;
+          setTempShape(null);
+          return;
+          break;
+        case "diamond":
+          shape = new fabric.Polygon(
+            [
+              { x: 0, y: 50 },
+              { x: 50, y: 0 },
+              { x: 100, y: 50 },
+              { x: 50, y: 100 },
+            ],
+            {
+              left: pointer.x,
+              top: pointer.y,
+              width: 0,
+              height: 0,
+              fill: "transparent", // Correct fill
+              stroke: "blue",
+              strokeWidth: 3,
+              selectable: false,
+              objectCaching: false,
+            }
+          );
+          break;
+
+        default:
           return;
       }
 
@@ -302,6 +345,17 @@ const CanvasBoard = () => {
             90,
         });
       }
+      if (drawingShape === "diamond" && tempShape instanceof fabric.Polygon) {
+        const width = Math.abs(pointer.x - x);
+        const height = Math.abs(pointer.y - y);
+
+        tempShape.set({
+          width: width,
+          height: height,
+          left: Math.min(pointer.x, x),
+          top: Math.min(pointer.y, y),
+        });
+      }
 
       canvas.renderAll();
     };
@@ -310,7 +364,6 @@ const CanvasBoard = () => {
       if (mode !== "draw") return;
 
       if (drawingShape === "arrow" && arrowLine && arrowHead) {
-        // group line + head as a single arrow object
         const arrowGroup = new fabric.Group([arrowLine, arrowHead], {
           selectable: false,
           evented: false,
@@ -323,13 +376,17 @@ const CanvasBoard = () => {
         canvas.remove(arrowHead);
         canvas.add(arrowGroup);
 
-        // setTempShape(null);
         arrowLine = null;
         arrowHead = null;
         startPoint.current = null;
       } else if (tempShape) {
-        tempShape.set({ selectable: false, evented: false });
+        tempShape.set({
+          selectable: true,
+          evented: true,
+        });
+
         tempShape.setCoords();
+        canvas.renderAll();
         setTempShape(null);
         startPoint.current = null;
       }
@@ -401,6 +458,19 @@ const CanvasBoard = () => {
         if (canvas.upperCanvasEl) {
           canvas.upperCanvasEl.style.cursor = "crosshair";
         }
+      }
+    } else if (type === "text") {
+      setMode("draw");
+      setDrawingShape("text");
+      if (canvas) {
+        canvas.isDrawingMode = false;
+        canvas.selection = false;
+        canvas.forEachObject((obj) => {
+          obj.selectable = false;
+          obj.evented = false;
+        });
+        canvas.defaultCursor = "text";
+        canvas.hoverCursor = "text";
       }
     } else {
       setMode("draw");
