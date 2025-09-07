@@ -8,18 +8,25 @@ import { zoomIn, zoomOut, resetZoom } from "@/utils/zoomUtils";
 import { ShapeType } from "@/types/tools";
 import { AppSidebar } from "../_components/AppSidebar";
 import { Toolbar } from "./ToolBar";
+import { Settings, X } from "lucide-react";
+import { InfoSidebar } from "./InfoSidebar";
+import { ZoomControl } from "@/components/ZoomControl";
+import { ResponsiveSidebar } from "@/components/ResponsiveSideBar";
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [activeTool, setActiveTool] = useState<ShapeType>("select");
+  const [isActive, setIsActive] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false); // toggle sidebar
 
   const [mode, setMode] = useState<
     "select" | "draw" | "eraser" | "freeDraw" | "grab" | null
   >(null);
   const [drawingShape, setDrawingShape] = useState<ShapeType | null>(null);
   const [tempShape, setTempShape] = useState<fabric.Object | null>(null);
-  const [zoom, setZoom] = useState<ReactNode>(100);
+  const [zoom, setZoom] = useState<number>(100);
+
   const startPoint = useRef<{ x: number; y: number } | null>(null);
   const { theme } = useTheme();
 
@@ -500,26 +507,21 @@ const CanvasBoard = () => {
 
   return (
     <div className="relative w-full h-full">
-      {/* Toolbar centered at the top */}
-      {/* Toolbar - top on desktop, bottom on mobile */}
-      {/* Toolbar - stays top-center on all screens */}
-      {/* Toolbar - stays top-center on all screens */}
-      <div
-        className="
-    absolute top-4 left-1/2 -translate-x-1/2 z-50
-    w-[95%] sm:w-auto
-  "
-      >
+      {/* Toolbar */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] sm:w-auto max-w-lg flex justify-center px-2 sm:px-0">
         <Toolbar activeTool={activeTool} onToolChange={handleAddShapes} />
       </div>
+      <div className="absolute top-4 right-4 z-50 sm:hidden">
+        <button
+          onClick={() => setShowSidebar((prev) => !prev)}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm border border-border rounded-md transition-colors bg-[#605ebc] text-white"
+        >
+          <Settings className="w-4 h-4" />
+        </button>
+      </div>
 
-      {/* Canvas fills the background */}
-      <canvas ref={canvasRef} className="w-full h-full" />
-
-      {/* Zoom Controls (optional, can also be bottom-right like Excalidraw) */}
-      {/* 
-    <div className="absolute bottom-4 right-4 z-50">
-      <ZoomControl
+      {/* ResponsiveSidebar handles both mobile & desktop behavior */}
+      <ResponsiveSidebar
         zoomIn={() => {
           zoomIn(canvas!);
           setZoom(Math.round(canvas!.getZoom() * 100));
@@ -534,8 +536,8 @@ const CanvasBoard = () => {
         }}
         zoom={zoom}
       />
-    </div>
-    */}
+
+      <canvas ref={canvasRef} className="w-full h-full" />
     </div>
   );
 };

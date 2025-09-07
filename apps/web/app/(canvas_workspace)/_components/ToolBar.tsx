@@ -122,7 +122,7 @@ export const Toolbar = ({ activeTool, onToolChange }: ToolbarProps) => {
   return (
     <div className="floating-toolbar">
       <TooltipProvider>
-        <div className="flex flex-nowrap justify-center gap-1 bg-background/95 backdrop-blur-sm rounded-lg px-2 py-2 shadow-xl border border-border overflow-x-auto">
+        <div className="flex flex-nowrap justify-center gap-1 bg-background/95 backdrop-blur-sm rounded-lg px-1 py-1 sm:px-2 sm:py-2 shadow-xl border border-border overflow-x-auto">
           {tools.map((tool) => (
             <Tooltip key={tool.id}>
               <TooltipTrigger asChild>
@@ -130,9 +130,10 @@ export const Toolbar = ({ activeTool, onToolChange }: ToolbarProps) => {
                   variant="ghost"
                   size="sm"
                   className={`
-                    tool-button relative 
-                    w-7 h-7 sm:w-10 sm:h-10 // smaller on mobile, normal on tablet/desktop
-                    p-0 text-xs sm:text-sm
+                    tool-button relative
+                    w-6 h-6 sm:w-10 sm:h-10
+                    p-0 sm:p-0
+                    text-[10px] sm:text-sm
                     ${activeTool === tool.id ? "active" : ""}
                   `}
                   onClick={() => onToolChange(tool.id)}
