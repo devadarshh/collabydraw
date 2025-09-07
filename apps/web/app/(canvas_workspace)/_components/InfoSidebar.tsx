@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Upload,
   Download,
@@ -14,6 +13,7 @@ import {
   Moon,
   Settings2,
   ExternalLink,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,7 @@ import { useTheme } from "next-themes";
 interface InfoSidebarProps {
   className?: string;
   isLoggedIn?: boolean;
+  onClearCanvas?: () => void;
 }
 
 const socialLinks = [
@@ -34,6 +35,7 @@ const socialLinks = [
 export function InfoSidebar({
   className,
   isLoggedIn = false,
+  onClearCanvas,
 }: InfoSidebarProps) {
   const colorOptions = ["#ffffff", "#f0f0f0", "#121212", "#fef3c7", "#d1fae5"];
   const { theme, setTheme } = useTheme();
@@ -51,12 +53,11 @@ export function InfoSidebar({
   return (
     <div
       className={cn(
-        "flex flex-col w-72 sm:w-80 h-screen bg-white dark:bg-[#1e1e1e] border-l border-[#605ebc33] p-4 justify-between",
+        "flex flex-col w-72 sm:w-80 h-screen bg-white dark:bg-[#1e1e1e] border-l border-[#605ebc33] p-6 justify-between",
         className
       )}
     >
       <div className="space-y-4">
-        {/* Header */}
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Settings2 className="w-5 h-5 text-[#605ebc]" />
@@ -66,12 +67,12 @@ export function InfoSidebar({
             Manage your canvas and sharing options
           </p>
         </div>
-        {/* Top buttons */}
+
         <div className="flex flex-col gap-2 mb-4">
           {!isLoggedIn && (
             <Button
               size="sm"
-              className="border border-[#605ebc33] hover:bg-[#8d8bd622]"
+              className="border border-[#605ebc33] hover:bg-[#8d8bd622] cursor-pointer"
             >
               Create Account
             </Button>
@@ -79,26 +80,25 @@ export function InfoSidebar({
           {isLoggedIn && (
             <Button
               size="sm"
-              className="border border-[#605ebc33] hover:bg-[#8d8bd622]"
+              className="border border-[#605ebc33] hover:bg-[#8d8bd622] cursor-pointer"
             >
               Logout
             </Button>
           )}
         </div>
-        {/* File Operations */}
+
         <section>
           <SectionTitle>File Operations</SectionTitle>
           <div className="flex flex-col gap-2">
-            <button className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all">
-              <Upload className="w-4 h-4 text-[#605ebc]" /> Import
+            <button className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer">
+              <Upload className="w-4 h-4 text-[#605ebc]" /> Import Drawing
             </button>
-            <button className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all">
-              <Download className="w-4 h-4 text-[#605ebc]" /> Export
+            <button className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer">
+              <Download className="w-4 h-4 text-[#605ebc]" /> Export Drawing
             </button>
           </div>
         </section>
 
-        {/* Canvas Background */}
         <section>
           <SectionTitle>Canvas Background</SectionTitle>
           <div className="flex gap-2 mb-2">
@@ -106,7 +106,7 @@ export function InfoSidebar({
               <button
                 key={color}
                 style={{ backgroundColor: color }}
-                className="w-6 h-6 rounded border border-[#605ebc33] hover:border-[#605ebc55]"
+                className="w-6 h-6 rounded border border-[#605ebc33] hover:border-[#605ebc55] cursor-pointer"
               />
             ))}
           </div>
@@ -122,25 +122,26 @@ export function InfoSidebar({
           </div>
         </section>
 
-        {/* Sharing & Collaboration */}
         <section>
-          <SectionTitle>Sharing & Collaboration</SectionTitle>
+          <SectionTitle>Sharing</SectionTitle>
           <div className="flex flex-col gap-2">
-            <button className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all">
-              <Share2 className="w-4 h-4 text-[#605ebc]" /> Share
+            <button className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer">
+              <Users className="w-4 h-4 text-[#605ebc]" /> Live Collaboration
             </button>
-            <button className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all">
-              <Users className="w-4 h-4 text-[#605ebc]" /> Collaborate
+            <button
+              onClick={onClearCanvas}
+              className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-red-500 text-red-500 hover:bg-red-100 transition-all cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4 text-red-500" /> Clear Canvas
             </button>
           </div>
         </section>
 
-        {/* Appearance */}
         <section>
           <SectionTitle>Appearance</SectionTitle>
           <button
             onClick={toggleTheme}
-            className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all"
+            className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer"
           >
             {theme === "dark" ? (
               <Sun className="w-4 h-4 text-[#605ebc]" />
@@ -151,9 +152,8 @@ export function InfoSidebar({
           </button>
         </section>
 
-        {/* Social Profiles */}
         <section>
-          <SectionTitle>Connect</SectionTitle>
+          <SectionTitle>Connect With Me</SectionTitle>
           <div className="flex flex-col gap-2">
             {socialLinks.map((social) => (
               <a
@@ -161,7 +161,7 @@ export function InfoSidebar({
                 href={social.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all text-[#111] dark:text-[#eee]"
+                className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all text-[#111] dark:text-[#eee] cursor-pointer"
               >
                 <social.icon className="w-4 h-4 text-[#605ebc]" />
                 {social.name}
@@ -170,13 +170,6 @@ export function InfoSidebar({
             ))}
           </div>
         </section>
-      </div>
-
-      {/* Footer Buttons */}
-      <div className="flex flex-col gap-2 mt-4">
-        <div className="text-center text-xs text-[#605ebc] dark:text-[#8d8bd6] mt-2">
-          Excalidraw Clone v1.0
-        </div>
       </div>
     </div>
   );

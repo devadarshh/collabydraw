@@ -6,7 +6,6 @@ import {
   Diamond,
   Minus,
   Type,
-  Image,
   Pen,
   Eraser,
   Hand,
@@ -122,7 +121,11 @@ export const Toolbar = ({ activeTool, onToolChange }: ToolbarProps) => {
   return (
     <div className="floating-toolbar">
       <TooltipProvider>
-        <div className="flex flex-nowrap justify-center gap-1 bg-background/95 backdrop-blur-sm rounded-lg px-1 py-1 sm:px-2 sm:py-2 shadow-xl border border-border overflow-x-auto">
+        <div
+          className="flex flex-nowrap justify-center items-center gap-1 
+                        bg-background/95 backdrop-blur-sm rounded-lg px-1 py-1 sm:px-2 sm:py-2 
+                        shadow-xl border border-border overflow-x-auto"
+        >
           {tools.map((tool) => (
             <Tooltip key={tool.id}>
               <TooltipTrigger asChild>
@@ -130,17 +133,21 @@ export const Toolbar = ({ activeTool, onToolChange }: ToolbarProps) => {
                   variant="ghost"
                   size="sm"
                   className={`
-                    tool-button relative
-                    w-6 h-6 sm:w-10 sm:h-10
-                    p-0 sm:p-0
-                    text-[10px] sm:text-sm
-                    ${activeTool === tool.id ? "active" : ""}
-                  `}
+    relative w-6 h-6 sm:w-10 sm:h-10 p-0 
+    flex items-center justify-center 
+    text-[10px] sm:text-sm cursor-pointer
+    transition-colors
+    hover:bg-indigo-500/20 hover:text-indigo-700
+    ${activeTool === tool.id ? "bg-indigo-500/30 text-indigo-700" : ""}
+  `}
                   onClick={() => onToolChange(tool.id)}
                 >
                   <tool.icon className="w-3 h-3 sm:w-4 sm:h-4" />
-                  {/* Hide shortcut on mobile */}
-                  <span className="hidden sm:inline absolute -bottom-1 -right-1 text-[10px] sm:text-xs bg-muted text-muted-foreground rounded px-1 leading-none">
+                  <span
+                    className="hidden sm:inline absolute -bottom-1 -right-1 
+                   text-[10px] sm:text-xs bg-muted text-muted-foreground 
+                   rounded px-1 leading-none"
+                  >
                     {tool.shortcut}
                   </span>
                 </Button>
@@ -152,17 +159,6 @@ export const Toolbar = ({ activeTool, onToolChange }: ToolbarProps) => {
           ))}
         </div>
       </TooltipProvider>
-
-      <style jsx>{`
-        .tool-button:hover {
-          background: linear-gradient(to right, #8d8bd6 0%, #8d8bd6 100%);
-          color: white;
-        }
-        .tool-button.active {
-          background: linear-gradient(to right, #605ebc 0%, #605ebc 100%);
-          color: white;
-        }
-      `}</style>
     </div>
   );
 };

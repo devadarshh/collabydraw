@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Settings } from "lucide-react";
 import { ZoomControl } from "@/components/ZoomControl";
 import { InfoSidebar } from "@/app/(canvas_workspace)/_components/InfoSidebar";
@@ -11,6 +10,8 @@ interface ResponsiveSidebarProps {
   zoomOut: () => void;
   resetZoom: () => void;
   zoom: number;
+  showSidebar: boolean;
+  setShowSidebar: (value: boolean) => void;
 }
 
 export function ResponsiveSidebar({
@@ -18,12 +19,11 @@ export function ResponsiveSidebar({
   zoomOut,
   resetZoom,
   zoom,
+  showSidebar,
+  setShowSidebar,
 }: ResponsiveSidebarProps) {
-  const [showSidebar, setShowSidebar] = useState(false);
-
   return (
     <>
-      {/* Mobile bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-between items-center p-2 bg-white dark:bg-[#1e1e1e] border-t border-[#605ebc33] sm:hidden">
         <button
           onClick={() => setShowSidebar(!showSidebar)}
@@ -39,7 +39,6 @@ export function ResponsiveSidebar({
         />
       </div>
 
-      {/* Mobile Sidebar slides from bottom */}
       <div
         className={cn(
           "fixed left-0 right-0 bottom-0 z-40 transition-transform duration-300 sm:hidden h-3/4 shadow-lg overflow-y-auto bg-white dark:bg-[#1e1e1e] border-t border-[#605ebc33]",
@@ -49,7 +48,6 @@ export function ResponsiveSidebar({
         <InfoSidebar />
       </div>
 
-      {/* Desktop/Tablet Sidebar slides in from right */}
       <div
         className={cn(
           "hidden sm:flex sm:flex-col sm:fixed sm:top-0 sm:right-0 sm:h-screen sm:w-80 z-40 transition-transform duration-300",
@@ -59,7 +57,6 @@ export function ResponsiveSidebar({
         <InfoSidebar />
       </div>
 
-      {/* Desktop/Tablet Zoom controls bottom-left */}
       <div className="hidden sm:flex sm:flex-col sm:fixed sm:left-4 sm:bottom-4 sm:z-50 gap-2">
         <ZoomControl
           zoomIn={zoomIn}

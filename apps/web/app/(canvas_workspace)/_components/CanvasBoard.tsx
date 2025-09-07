@@ -6,12 +6,14 @@ import { useTheme } from "next-themes";
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { zoomIn, zoomOut, resetZoom } from "@/utils/zoomUtils";
 import { ShapeType } from "@/types/tools";
-import { AppSidebar } from "../_components/AppSidebar";
 import { Toolbar } from "./ToolBar";
 import { Settings, X } from "lucide-react";
-import { InfoSidebar } from "./InfoSidebar";
-import { ZoomControl } from "@/components/ZoomControl";
 import { ResponsiveSidebar } from "@/components/ResponsiveSideBar";
+
+export interface CanvasBoardRef {
+  clear: () => void;
+  getZoom: () => number;
+}
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -39,7 +41,6 @@ const CanvasBoard = () => {
     return themeColors.light;
   };
 
-  // init canvas
   useEffect(() => {
     if (canvasRef.current) {
       const parent = canvasRef.current.parentElement!;
@@ -65,24 +66,7 @@ const CanvasBoard = () => {
       };
     }
   }, []);
-  const handleToolChange = (toolId: string) => {
-    setActiveTool(toolId as any);
 
-    if (!canvas) return;
-
-    if (toolId === "select") {
-      canvas.isDrawingMode = false;
-      canvas.selection = true;
-    } else if (toolId === "eraser") {
-      // TODO: add eraser logic
-    } else if (toolId === "pen") {
-      canvas.isDrawingMode = true;
-    } else {
-      // TODO: draw shapes based on toolId
-    }
-  };
-
-  // grab/pan
   useEffect(() => {
     if (!canvas) return;
     let isDragging = false;
@@ -128,7 +112,6 @@ const CanvasBoard = () => {
     };
   }, [canvas, mode]);
 
-  // zoom with ctrl+wheel
   useEffect(() => {
     if (!canvas) return;
     const wheelHandler = (opt: fabric.TEvent<WheelEvent>) => {
@@ -153,7 +136,6 @@ const CanvasBoard = () => {
     return () => canvas.off("mouse:wheel", wheelHandler);
   }, [canvas]);
 
-  // keyboard shortcuts
   useEffect(() => {
     const handleShortcutKeys = (e: KeyboardEvent) => {
       const shortcutMap: Record<string, ShapeType> = {
@@ -177,7 +159,6 @@ const CanvasBoard = () => {
     return () => window.removeEventListener("keydown", handleShortcutKeys);
   }, [canvas]);
 
-  // drawing logic
   useEffect(() => {
     if (!canvas) return;
 
@@ -295,7 +276,7 @@ const CanvasBoard = () => {
               top: pointer.y,
               width: 0,
               height: 0,
-              fill: "transparent", // Correct fill
+              fill: "transparent",
               stroke: "blue",
               strokeWidth: 3,
               selectable: false,
@@ -412,7 +393,6 @@ const CanvasBoard = () => {
     };
   }, [canvas, drawingShape, mode, tempShape]);
 
-  // toolbar handlers
   const handleAddShapes = (type: ShapeType) => {
     setActiveTool(type);
     if (type === "select") {
@@ -497,7 +477,6 @@ const CanvasBoard = () => {
     }
   };
 
-  // theme bg
   useEffect(() => {
     if (canvas) {
       canvas.backgroundColor = getCanvasBg();
@@ -507,20 +486,29 @@ const CanvasBoard = () => {
 
   return (
     <div className="relative w-full h-full">
-      {/* Toolbar */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] sm:w-auto max-w-lg flex justify-center px-2 sm:px-0">
         <Toolbar activeTool={activeTool} onToolChange={handleAddShapes} />
       </div>
-      <div className="absolute top-4 right-4 z-50 sm:hidden">
+      <div className="absolute top-4 right-4 z-50 hidden sm:block">
         <button
           onClick={() => setShowSidebar((prev) => !prev)}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm border border-border rounded-md transition-colors bg-[#605ebc] text-white"
+          className={`flex items-center gap-2 px-3 py-1.5 text-sm border border-border rounded-md transition-colors ${
+            showSidebar
+              ? "bg-gradient-to-r from-[#605ebc] to-[#605ebc] text-white"
+              : "hover:bg-gradient-to-r hover:from-[#8d8bd6] hover:to-[#8d8bd6] hover:text-white"
+          }`}
         >
-          <Settings className="w-4 h-4" />
+          {showSidebar ? (
+            <X className="w-4 h-4" />
+          ) : (
+            <Settings className="w-4 h-4" />
+          )}
+          <span className="hidden sm:inline">
+            {showSidebar ? "Close" : "Settings"}
+          </span>
         </button>
       </div>
 
-      {/* ResponsiveSidebar handles both mobile & desktop behavior */}
       <ResponsiveSidebar
         zoomIn={() => {
           zoomIn(canvas!);
@@ -535,6 +523,8 @@ const CanvasBoard = () => {
           setZoom(100);
         }}
         zoom={zoom}
+        showSidebar={showSidebar}
+        setShowSidebar={setShowSidebar}
       />
 
       <canvas ref={canvasRef} className="w-full h-full" />
