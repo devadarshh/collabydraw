@@ -1,4 +1,4 @@
-import CanvasBoard from "./_components/CanvasBoard";
+import CanvasBoard from "@/components/canvas/CanvasBoard";
 
 const CanvasPage = () => {
   return (

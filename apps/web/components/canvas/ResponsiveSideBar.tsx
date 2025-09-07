@@ -1,8 +1,8 @@
 "use client";
 
 import { Settings } from "lucide-react";
-import { ZoomControl } from "@/components/ZoomControl";
-import { InfoSidebar } from "@/app/(canvas_workspace)/_components/InfoSidebar";
+import { ZoomControl } from "@/components/canvas/ZoomControl";
+import { InfoSidebar } from "@/components/canvas/InfoSidebar";
 import { cn } from "@/lib/utils";
 
 interface ResponsiveSidebarProps {
