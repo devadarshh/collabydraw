@@ -3,15 +3,17 @@ import React, { ReactNode } from "react";
 import { useState, useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import { useTheme } from "next-themes";
-import ToolBar from "./ToolBar";
-import { ShapeType } from "../../types";
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { zoomIn, zoomOut, resetZoom } from "@/utils/zoomUtils";
-import { ZoomControl } from "./ZoomControl";
+import { ShapeType } from "@/types/tools";
+import { AppSidebar } from "../_components/AppSidebar";
+import { Toolbar } from "./ToolBar";
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
+  const [activeTool, setActiveTool] = useState<ShapeType>("select");
+
   const [mode, setMode] = useState<
     "select" | "draw" | "eraser" | "freeDraw" | "grab" | null
   >(null);
@@ -33,9 +35,10 @@ const CanvasBoard = () => {
   // init canvas
   useEffect(() => {
     if (canvasRef.current) {
+      const parent = canvasRef.current.parentElement!;
       const initCanvas = new fabric.Canvas(canvasRef.current, {
-        width: window.innerWidth,
-        height: window.innerHeight,
+        width: parent.clientWidth,
+        height: parent.clientHeight,
         selection: true,
         backgroundColor: getCanvasBg(),
       });
@@ -43,8 +46,8 @@ const CanvasBoard = () => {
       setCanvas(initCanvas);
 
       const handleResize = () => {
-        initCanvas.setWidth(window.innerWidth);
-        initCanvas.setHeight(window.innerHeight);
+        initCanvas.setWidth(parent.clientWidth);
+        initCanvas.setHeight(parent.clientHeight);
         initCanvas.renderAll();
       };
 
@@ -55,6 +58,22 @@ const CanvasBoard = () => {
       };
     }
   }, []);
+  const handleToolChange = (toolId: string) => {
+    setActiveTool(toolId as any);
+
+    if (!canvas) return;
+
+    if (toolId === "select") {
+      canvas.isDrawingMode = false;
+      canvas.selection = true;
+    } else if (toolId === "eraser") {
+      // TODO: add eraser logic
+    } else if (toolId === "pen") {
+      canvas.isDrawingMode = true;
+    } else {
+      // TODO: draw shapes based on toolId
+    }
+  };
 
   // grab/pan
   useEffect(() => {
@@ -130,38 +149,21 @@ const CanvasBoard = () => {
   // keyboard shortcuts
   useEffect(() => {
     const handleShortcutKeys = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case "1":
-          handleAddShapes("select");
-          break;
-        case "2":
-          handleAddShapes("grab");
-          break;
-        case "3":
-          handleAddShapes("rectangle");
-          break;
-        case "4":
-          handleAddShapes("ellipse");
-          break;
-        case "5":
-          handleAddShapes("diamond");
-          break;
-        case "6":
-          handleAddShapes("line");
-          break;
-        case "7":
-          handleAddShapes("freeDraw");
-          break;
-        case "8":
-          handleAddShapes("arrow");
-          break;
-        case "9":
-          handleAddShapes("text");
-          break;
-        case "0":
-          handleAddShapes("eraser");
-          break;
-      }
+      const shortcutMap: Record<string, ShapeType> = {
+        "1": "select",
+        "2": "rectangle",
+        "3": "ellipse",
+        "4": "diamond",
+        "5": "line",
+        "6": "freeDraw",
+        "7": "arrow",
+        "8": "text",
+        "9": "eraser",
+        "0": "grab",
+      };
+
+      const tool = shortcutMap[e.key];
+      if (tool) handleAddShapes(tool);
     };
 
     window.addEventListener("keydown", handleShortcutKeys);
@@ -405,6 +407,7 @@ const CanvasBoard = () => {
 
   // toolbar handlers
   const handleAddShapes = (type: ShapeType) => {
+    setActiveTool(type);
     if (type === "select") {
       setMode("select");
       setDrawingShape(null);
@@ -496,17 +499,26 @@ const CanvasBoard = () => {
   }, [theme, canvas]);
 
   return (
-    <div className="relative w-screen h-screen">
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
-        <ToolBar
-          selectedShape={
-            (drawingShape as ShapeType) ?? (mode as ShapeType) ?? "select"
-          }
-          onAddShape={handleAddShapes}
-        />
+    <div className="relative w-full h-full">
+      {/* Toolbar centered at the top */}
+      {/* Toolbar - top on desktop, bottom on mobile */}
+      {/* Toolbar - stays top-center on all screens */}
+      {/* Toolbar - stays top-center on all screens */}
+      <div
+        className="
+    absolute top-4 left-1/2 -translate-x-1/2 z-50
+    w-[95%] sm:w-auto
+  "
+      >
+        <Toolbar activeTool={activeTool} onToolChange={handleAddShapes} />
       </div>
+
+      {/* Canvas fills the background */}
       <canvas ref={canvasRef} className="w-full h-full" />
 
+      {/* Zoom Controls (optional, can also be bottom-right like Excalidraw) */}
+      {/* 
+    <div className="absolute bottom-4 right-4 z-50">
       <ZoomControl
         zoomIn={() => {
           zoomIn(canvas!);
@@ -522,6 +534,8 @@ const CanvasBoard = () => {
         }}
         zoom={zoom}
       />
+    </div>
+    */}
     </div>
   );
 };
