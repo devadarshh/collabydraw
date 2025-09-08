@@ -51,7 +51,7 @@ export function useDrawShapes({
             height: 0,
             fill: "rgba(0,0,0,0)",
             stroke: "blue",
-            strokeWidth: 3,
+            strokeWidth: 2,
             selectable: false,
           });
           break;
@@ -75,7 +75,7 @@ export function useDrawShapes({
             [pointer.x, pointer.y, pointer.x, pointer.y],
             {
               stroke: "blue",
-              strokeWidth: 3,
+              strokeWidth: 2,
               selectable: false,
               objectCaching: false,
               evented: false,
@@ -87,7 +87,7 @@ export function useDrawShapes({
             [pointer.x, pointer.y, pointer.x, pointer.y],
             {
               stroke: "blue",
-              strokeWidth: 3,
+              strokeWidth: 2,
               selectable: false,
               evented: false,
             }
@@ -138,7 +138,7 @@ export function useDrawShapes({
               top: pointer.y,
               fill: "transparent",
               stroke: "blue",
-              strokeWidth: 3,
+              strokeWidth: 2,
               selectable: false,
               objectCaching: false,
             }

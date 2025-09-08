@@ -15,23 +15,20 @@ import { CanvasSidebar } from "./CanvasSideBar";
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Canvas & Zoom
   const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
   const [zoom, setZoom] = useState<number>(100);
 
-  // Mode (for grab/draw/erase/select)
   const [mode, setMode] = useState<
     "select" | "draw" | "eraser" | "freeDraw" | "grab" | null
   >("select");
 
-  // Active tool / selected shape
   const [activeTool, setActiveTool] = useState<ShapeType>("select");
   const [drawingShape, setDrawingShape] = useState<ShapeType | null>(null);
+  const [tempShape, setTempShape] = useState<fabric.Object | null>(null);
 
-  // Sidebar / properties panel
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
-  const [selectedTool, setSelectedTool] = useState<string>("");
+  const [selectedTool, setSelectedTool] = useState<ShapeType>("select");
 
   const startPoint = useRef<{ x: number; y: number } | null>(null);
   const { theme } = useTheme();
@@ -43,7 +40,6 @@ const CanvasBoard = () => {
   const getCanvasBg = () =>
     theme === "dark" ? themeColors.dark : themeColors.light;
 
-  // Initialize Fabric Canvas
   useEffect(() => {
     if (!canvasRef.current) return;
     const parent = canvasRef.current.parentElement!;
@@ -68,14 +64,13 @@ const CanvasBoard = () => {
     };
   }, [theme]);
 
-  // Hooks
-  useGrabMode({ canvas, mode }); // only pass mode (type-safe)
+  useGrabMode({ canvas, mode });
   useDrawShapes({
     canvas,
     mode,
     drawingShape,
-    tempShape: null,
-    setTempShape: () => {},
+    tempShape,
+    setTempShape,
     startPoint,
   });
 
@@ -86,38 +81,36 @@ const CanvasBoard = () => {
     setActiveTool,
   });
 
-  // Wrap handleAddShapes to handle properties panel
   const handleShapeSelect = (tool: ShapeType) => {
     setDrawingShape(tool);
     setActiveTool(tool);
+    setSelectedTool(tool);
 
-    // If the tool is a shape, open properties panel
     if (
       [
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
         "rectangle",
         "circle",
+        "ellipse",
         "line",
+        "diamond",
+        "arrow",
+        "freeDraw",
+        "text",
       ].includes(tool)
     ) {
-      setSelectedTool(tool);
+      setMode("draw");
       setShowPropertiesPanel(true);
-      setMode("draw"); // valid mode for drawing
-    } else {
+    } else if (tool === "eraser") {
+      setMode("eraser");
       setShowPropertiesPanel(false);
+    } else if (tool === "grab") {
+      setMode("grab");
+      setShowPropertiesPanel(false);
+    } else if (tool === "select") {
       setMode("select");
+      setShowPropertiesPanel(false);
     }
 
-    // Call existing handler
     handleAddShapes(tool);
   };
 
@@ -126,12 +119,10 @@ const CanvasBoard = () => {
 
   return (
     <div className="relative w-full h-full">
-      {/* Toolbar */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] sm:w-auto max-w-lg flex justify-center px-2 sm:px-0">
         <Toolbar activeTool={activeTool} onToolChange={handleShapeSelect} />
       </div>
 
-      {/* Sidebar / Properties Panel */}
       <CanvasSidebar
         showPropertiesPanel={showPropertiesPanel}
         setShowPropertiesPanel={setShowPropertiesPanel}
@@ -143,7 +134,6 @@ const CanvasBoard = () => {
         setZoom={setZoom}
       />
 
-      {/* Canvas */}
       <canvas ref={canvasRef} className="w-full h-full" />
     </div>
   );
