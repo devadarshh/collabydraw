@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { X, Settings, Paintbrush } from "lucide-react";
+import { X, Settings } from "lucide-react";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { ResponsiveSidebar } from "@/components/canvas/ResponsiveSideBar";
 import { InfoSidebar } from "./InfoSidebar";
 import * as fabric from "fabric";
 import { ShapeType, tools } from "@/types/tools";
+import { MobileBottomBar } from "../MobileBottomBar";
 
 interface CanvasSidebarProps {
   showPropertiesPanel: boolean;
@@ -48,14 +49,12 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
       setZoom(Math.round(canvas.getZoom() * 100));
     }
   };
-
   const handleZoomOut = () => {
     if (canvas) {
       canvas.setZoom(canvas.getZoom() / 1.1);
       setZoom(Math.round(canvas.getZoom() * 100));
     }
   };
-
   const handleResetZoom = () => {
     if (canvas) {
       canvas.setZoom(1);
@@ -65,7 +64,7 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
 
   return (
     <>
-      {/* --- Desktop Properties Panel (left sidebar) --- */}
+      {/* --- Desktop Properties Panel --- */}
       <div
         className={`fixed top-0 mt-28 left-0 z-40 bg-richblack-800 text-yellow-400 shadow-lg transform transition-transform duration-300 hidden sm:block
           ${showPropertiesPanel ? "translate-x-0" : "-translate-x-full"}`}
@@ -75,32 +74,15 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           onClose={() => setShowPropertiesPanel(false)}
         />
       </div>
-      {/* --- Mobile Properties Panel (bottom sheet) --- */}
-      <div
-        className={`fixed bottom-0 left-0 w-full z-[9999] transform transition-transform duration-300 sm:hidden
-          ${showPropertiesPanel ? "translate-y-0" : "translate-y-full"}`}
-      >
-        <div className="w-full max-h-[80vh] p-4 shadow-lg bg-richblack-800 text-yellow-400 rounded-t-2xl overflow-y-auto">
-          <PropertiesPanel
-            selectedTool={selectedTool}
-            onClose={() => setShowPropertiesPanel(false)}
-          />
-        </div>
-      </div>
-      {/* --- Desktop InfoSidebar (right sidebar) --- */}
+
+      {/* --- Desktop InfoSidebar --- */}
       <div
         className={`hidden sm:flex sm:flex-col sm:fixed sm:top-0 sm:right-0 sm:h-screen sm:w-78 z-40 transition-transform duration-300
           ${showSidebar ? "translate-x-0" : "translate-x-full"}`}
       >
         <InfoSidebar />
       </div>
-      {/* --- Mobile InfoSidebar (bottom sheet) --- */}
-      <div
-        className={`fixed bottom-0 left-0 w-full z-40 transition-transform duration-300 sm:hidden h-3/4 shadow-lg overflow-y-auto bg-white dark:bg-[#1e1e1e] border-t border-[#605ebc33]
-          ${showSidebar ? "translate-y-0" : "translate-y-full"}`}
-      >
-        <InfoSidebar />
-      </div>
+
       {/* --- Desktop Settings Button --- */}
       <div className="absolute top-4 right-4 z-50 hidden sm:block">
         <button
@@ -121,24 +103,31 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           </span>
         </button>
       </div>
-      {/* --- Mobile Bottom Navbar --- */}
-      <div className="fixed bottom-0 left-0 w-full sm:hidden bg-richblack-800 border-t border-richblack-700 text-[#605ebc] flex justify-around items-center py-2 z-[9999]">
-        <button
-          onClick={() => setShowSidebar((prev) => !prev)}
-          className="flex flex-col items-center hover:text-[#8d8bd6]"
-        >
-          <Settings className="w-6 h-6" />
-          <span className="text-xs">Settings</span>
-        </button>
+      {/* --- Mobile Properties Panel --- */}
+      <div
+        className={`fixed left-0 right-0 bottom-0 z-40 sm:hidden h-2/4 shadow-lg overflow-y-auto bg-richblack-800 text-yellow-400 border-t border-[#605ebc33] transform transition-transform duration-300 ${
+          showPropertiesPanel ? "translate-y-0" : "translate-y-full"
+        }`}
+      >
+        <PropertiesPanel
+          selectedTool={selectedTool}
+          onClose={() => setShowPropertiesPanel(false)}
+        />
+      </div>
 
-        <button
-          onClick={() => setShowPropertiesPanel(true)}
-          className="flex flex-col items-center hover:text-[#8d8bd6]"
-        >
-          <Paintbrush className="w-6 h-6" />
-          <span className="text-xs">Style</span>
-        </button>
-      </div>{" "}
+      {/* --- Mobile Bottom Bar --- */}
+      <MobileBottomBar
+        zoomIn={handleZoomIn}
+        zoomOut={handleZoomOut}
+        resetZoom={handleResetZoom}
+        zoom={zoom}
+        showSidebar={showSidebar}
+        setShowSidebar={setShowSidebar}
+        onOpenPropertiesPanel={() => setShowPropertiesPanel(true)}
+        selectedTool={selectedTool} // <-- pass this
+      />
+
+      {/* --- Desktop Zoom Control --- */}
       <ResponsiveSidebar
         zoomIn={handleZoomIn}
         zoomOut={handleZoomOut}

@@ -24,20 +24,20 @@ export function ResponsiveSidebar({
 }: ResponsiveSidebarProps) {
   return (
     <>
-      <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-between items-center p-2 bg-white dark:bg-[#1e1e1e] border-t border-[#605ebc33] sm:hidden">
+      {/* <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-between items-center p-2 bg-white dark:bg-[#1e1e1e] border-t border-[#605ebc33] sm:hidden">
         <button
           onClick={() => setShowSidebar(!showSidebar)}
           className="flex items-center justify-center w-10 h-10 rounded-full bg-[#605ebc] text-white"
         >
           <Settings className="w-5 h-5" />
-        </button>
+        </button>{" "}
         <ZoomControl
           zoomIn={zoomIn}
           zoomOut={zoomOut}
           resetZoom={resetZoom}
           zoom={zoom}
         />
-      </div>
+      </div> */}
 
       <div
         className={cn(
