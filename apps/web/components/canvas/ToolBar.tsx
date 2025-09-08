@@ -29,9 +29,11 @@ export const Toolbar = ({ activeTool, onToolChange }: ToolbarProps) => {
     <div className="floating-toolbar">
       <TooltipProvider>
         <div
-          className="flex flex-nowrap justify-center items-center gap-1 
-                        bg-background/95 backdrop-blur-sm rounded-lg px-1 py-1 sm:px-2 sm:py-2 
-                        shadow-xl border border-border overflow-x-auto"
+          className="
+    flex flex-nowrap justify-center items-center gap-3
+    w-full max-w-[700px] bg-background/95 backdrop-blur-sm 
+    rounded-lg px-2 py-1.5 shadow-xl border border-border overflow-x-auto
+  "
         >
           {tools.map((tool) => (
             <Tooltip key={tool.id}>

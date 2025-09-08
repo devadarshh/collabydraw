@@ -57,7 +57,7 @@ export function InfoSidebar({
         className
       )}
     >
-      <div className="space-y-4">
+      <div className="space-y-4 mt-8">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Settings2 className="w-5 h-5 text-[#605ebc]" />

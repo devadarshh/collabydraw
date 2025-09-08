@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
-import { Roboto } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { Roboto } from "next/font/google";
 
 const roboto = Roboto({
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "700"], // Choose the weights you need
   variable: "--font-roboto",
+  display: "swap",
 });
 
 export const metadata: Metadata = {

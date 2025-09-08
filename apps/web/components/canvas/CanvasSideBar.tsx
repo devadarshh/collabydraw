@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { X, Settings, Paintbrush } from "lucide-react";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { ResponsiveSidebar } from "@/components/canvas/ResponsiveSideBar";
+import { InfoSidebar } from "./InfoSidebar";
 import * as fabric from "fabric";
 import { ShapeType, tools } from "@/types/tools";
 
@@ -28,54 +29,84 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
   zoom,
   setZoom,
 }) => {
-  console.log("CanvasSidebar received selectedTool:", selectedTool);
-
   useEffect(() => {
-    // All tools except "select", "eraser", and "grab" should open properties
     const toolsWithProperties = tools
       .map((t) => t.id)
       .filter((id) => !["select", "eraser", "grab"].includes(id));
 
     if (toolsWithProperties.includes(selectedTool)) {
-      if (window.innerWidth >= 640) {
-        setShowPropertiesPanel(true); // desktop auto open
-      } else {
-        setShowPropertiesPanel(false); // mobile closed by default
-      }
+      setShowPropertiesPanel(window.innerWidth >= 640);
     } else {
       setShowPropertiesPanel(false);
     }
   }, [selectedTool, setShowPropertiesPanel]);
 
+  // Zoom handlers
+  const handleZoomIn = () => {
+    if (canvas) {
+      canvas.setZoom(canvas.getZoom() * 1.1);
+      setZoom(Math.round(canvas.getZoom() * 100));
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (canvas) {
+      canvas.setZoom(canvas.getZoom() / 1.1);
+      setZoom(Math.round(canvas.getZoom() * 100));
+    }
+  };
+
+  const handleResetZoom = () => {
+    if (canvas) {
+      canvas.setZoom(1);
+      setZoom(100);
+    }
+  };
+
   return (
     <>
-      {/* --- Properties Panel (Mobile: bottom sheet) --- */}
+      {/* --- Desktop Properties Panel (left sidebar) --- */}
       <div
-        className={`fixed bottom-0 left-0 w-full z-[99999] transform transition-transform duration-300 ease-in-out sm:hidden
+        className={`fixed top-0 mt-28 left-0 z-40 bg-richblack-800 text-yellow-400 shadow-lg transform transition-transform duration-300 hidden sm:block
+          ${showPropertiesPanel ? "translate-x-0" : "-translate-x-full"}`}
+      >
+        <PropertiesPanel
+          selectedTool={selectedTool}
+          onClose={() => setShowPropertiesPanel(false)}
+        />
+      </div>
+
+      {/* --- Mobile Properties Panel (bottom sheet) --- */}
+      <div
+        className={`fixed bottom-0 left-0 w-full z-[9999] transform transition-transform duration-300 sm:hidden
           ${showPropertiesPanel ? "translate-y-0" : "translate-y-full"}`}
       >
         <div className="w-full max-h-[80vh] p-4 shadow-lg bg-richblack-800 text-yellow-400 rounded-t-2xl overflow-y-auto">
           <PropertiesPanel
             selectedTool={selectedTool}
             onClose={() => setShowPropertiesPanel(false)}
-            className="w-full"
           />
         </div>
       </div>
 
-      {/* --- Properties Panel (Tablet/Desktop: left sidebar) --- */}
+      {/* --- Desktop InfoSidebar (right sidebar) --- */}
+
       <div
-        className={`fixed top-0 mt-10 left-0 h-full w-70 z-40 bg-richblack-800 text-yellow-400 shadow-lg transform transition-transform duration-300 hidden sm:block
-          ${showPropertiesPanel ? "translate-x-0" : "-translate-x-full"}`}
+        className={`hidden sm:flex sm:flex-col sm:fixed sm:top-0 sm:right-0 sm:h-screen sm:w-78 z-40 transition-transform duration-300
+          ${showSidebar ? "translate-x-0" : "translate-x-full"}`}
       >
-        <PropertiesPanel
-          selectedTool={selectedTool}
-          onClose={() => setShowPropertiesPanel(false)}
-          className="h-full w-full p-4 overflow-y-auto"
-        />
+        <InfoSidebar />
       </div>
 
-      {/* --- Desktop Settings Toggle --- */}
+      {/* --- Mobile InfoSidebar (bottom sheet) --- */}
+      <div
+        className={`fixed bottom-0 left-0 w-full z-40 transition-transform duration-300 sm:hidden h-3/4 shadow-lg overflow-y-auto bg-white dark:bg-[#1e1e1e] border-t border-[#605ebc33]
+          ${showSidebar ? "translate-y-0" : "translate-y-full"}`}
+      >
+        <InfoSidebar />
+      </div>
+
+      {/* --- Desktop Settings Button --- */}
       <div className="absolute top-4 right-4 z-50 hidden sm:block">
         <button
           onClick={() => setShowSidebar((prev) => !prev)}
@@ -96,9 +127,8 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
         </button>
       </div>
 
-      {/* --- Bottom Navbar (Mobile only) --- */}
+      {/* --- Mobile Bottom Navbar --- */}
       <div className="fixed bottom-0 left-0 w-full sm:hidden bg-richblack-800 border-t border-richblack-700 text-[#605ebc] flex justify-around items-center py-2 z-[9999]">
-        {/* Settings Button */}
         <button
           onClick={() => setShowSidebar((prev) => !prev)}
           className="flex flex-col items-center hover:text-[#8d8bd6]"
@@ -107,7 +137,6 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           <span className="text-xs">Settings</span>
         </button>
 
-        {/* Paint Button */}
         <button
           onClick={() => setShowPropertiesPanel(true)}
           className="flex flex-col items-center hover:text-[#8d8bd6]"
@@ -116,32 +145,14 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           <span className="text-xs">Style</span>
         </button>
 
-        {/* Zoom Controls */}
-        <div className="flex flex-col items-center">
-          <ResponsiveSidebar
-            zoomIn={() => {
-              if (canvas) {
-                canvas.setZoom(canvas.getZoom() * 1.1);
-                setZoom(Math.round(canvas.getZoom() * 100));
-              }
-            }}
-            zoomOut={() => {
-              if (canvas) {
-                canvas.setZoom(canvas.getZoom() / 1.1);
-                setZoom(Math.round(canvas.getZoom() * 100));
-              }
-            }}
-            resetZoom={() => {
-              if (canvas) {
-                canvas.setZoom(1);
-                setZoom(100);
-              }
-            }}
-            zoom={zoom}
-            showSidebar={showSidebar}
-            setShowSidebar={setShowSidebar}
-          />
-        </div>
+        <ResponsiveSidebar
+          zoomIn={handleZoomIn}
+          zoomOut={handleZoomOut}
+          resetZoom={handleResetZoom}
+          zoom={zoom}
+          showSidebar={showSidebar}
+          setShowSidebar={setShowSidebar}
+        />
       </div>
     </>
   );
