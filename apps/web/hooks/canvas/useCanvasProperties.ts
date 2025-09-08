@@ -1,6 +1,8 @@
 import { create } from "zustand";
 
-interface CanvasPropertiesState {
+type StrokeStyle = "solid" | "dashed" | "dotted";
+
+interface CanvasProperties {
   strokeColor: string;
   fillColor: string;
   strokeWidth: number;
@@ -9,31 +11,39 @@ interface CanvasPropertiesState {
   fontFamily: string;
   fontSize: number;
   textAlign: "left" | "center" | "right";
+  strokeStyle: StrokeStyle; // 🔥 NEW
+  textColor: string; // ✅ new
   setStrokeColor: (color: string) => void;
   setFillColor: (color: string) => void;
-  setStrokeWidth: (width: number) => void;
-  setOpacity: (value: number) => void;
-  setRoughness: (value: number) => void;
-  setFontFamily: (font: string) => void;
-  setFontSize: (size: number) => void;
-  setTextAlign: (align: "left" | "center" | "right") => void;
+  setStrokeWidth: (w: number) => void;
+  setOpacity: (o: number) => void;
+  setRoughness: (r: number) => void;
+  setFontFamily: (f: string) => void;
+  setFontSize: (s: number) => void;
+  setTextAlign: (a: "left" | "center" | "right") => void;
+  setStrokeStyle: (s: StrokeStyle) => void; // 🔥 NEW
+  setTextColor: (color: string) => void; // ✅ new
 }
 
-export const useCanvasProperties = create<CanvasPropertiesState>((set) => ({
+export const useCanvasProperties = create<CanvasProperties>((set) => ({
   strokeColor: "#000000",
-  fillColor: "transparent",
+  fillColor: "#ffffff",
   strokeWidth: 2,
   opacity: 100,
-  roughness: 1,
-  fontFamily: "Inter",
-  fontSize: 16,
+  roughness: 0,
+  fontFamily: "Assistant",
+  fontSize: 18,
   textAlign: "left",
-  setStrokeColor: (color) => set({ strokeColor: color }),
-  setFillColor: (color) => set({ fillColor: color }),
-  setStrokeWidth: (width) => set({ strokeWidth: width }),
-  setOpacity: (value) => set({ opacity: value }),
-  setRoughness: (value) => set({ roughness: value }),
-  setFontFamily: (font) => set({ fontFamily: font }),
-  setFontSize: (size) => set({ fontSize: size }),
-  setTextAlign: (align) => set({ textAlign: align }),
+  strokeStyle: "solid", // 🔥 default
+  textColor: "#000000",
+  setStrokeColor: (strokeColor) => set({ strokeColor }),
+  setFillColor: (fillColor) => set({ fillColor }),
+  setStrokeWidth: (strokeWidth) => set({ strokeWidth }),
+  setOpacity: (opacity) => set({ opacity }),
+  setRoughness: (roughness) => set({ roughness }),
+  setFontFamily: (fontFamily) => set({ fontFamily }),
+  setFontSize: (fontSize) => set({ fontSize }),
+  setTextAlign: (textAlign) => set({ textAlign }),
+  setStrokeStyle: (strokeStyle) => set({ strokeStyle }),
+  setTextColor: (color: string) => set({ textColor: color }),
 }));

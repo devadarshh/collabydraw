@@ -43,6 +43,7 @@ export function PropertiesPanel({
     fontFamily,
     fontSize,
     textAlign,
+    strokeStyle, // 🔥
     setStrokeColor,
     setFillColor,
     setStrokeWidth,
@@ -51,6 +52,7 @@ export function PropertiesPanel({
     setFontFamily,
     setFontSize,
     setTextAlign,
+    setStrokeStyle, // 🔥
   } = useCanvasProperties();
 
   const [customStroke, setCustomStroke] = useState(strokeColor);
@@ -93,7 +95,6 @@ export function PropertiesPanel({
           </button>
         )}
       </div>
-
       {/* Stroke Section */}
       {(isShapeTool || isTextTool) && (
         <section>
@@ -129,62 +130,114 @@ export function PropertiesPanel({
               className="w-10 h-10 p-0 rounded border cursor-pointer"
             />
           </div>
-          <h4 className="text-[11px] font-semibold text-[#605ebc] mb-1">
-            Width
-          </h4>
-          <div className="flex flex-wrap gap-1">
-            {strokeWidths.map((w) => (
-              <button
-                key={w}
-                onClick={() => setStrokeWidth(w)}
-                className={cn(
-                  "flex-1 h-7 rounded border text-xs font-medium cursor-pointer",
-                  strokeWidth === w
-                    ? "bg-[#605ebc] text-white border-[#605ebc]"
-                    : "border-[#605ebc33] hover:bg-[#8d8bd622]"
-                )}
-              >
-                {w}px
-              </button>
-            ))}
-          </div>
+
+          {/* Width (hidden for text) */}
+          {!isTextTool && (
+            <>
+              <h4 className="text-[11px] font-semibold text-[#605ebc] mb-1">
+                Width
+              </h4>
+              <div className="flex flex-wrap gap-1">
+                {strokeWidths.map((w) => (
+                  <button
+                    key={w}
+                    onClick={() => setStrokeWidth(w)}
+                    className={cn(
+                      "flex-1 h-7 rounded border text-xs font-medium cursor-pointer",
+                      strokeWidth === w
+                        ? "bg-[#605ebc] text-white border-[#605ebc]"
+                        : "border-[#605ebc33] hover:bg-[#8d8bd622]"
+                    )}
+                  >
+                    {w}px
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </section>
       )}
 
       {/* Fill Section */}
-      {(isShapeTool || isTextTool) && (
-        <section>
-          <h3 className="text-xs font-semibold text-[#605ebc] mb-1">Fill</h3>
-          <div className="grid grid-cols-6 gap-1">
-            {colorSwatches.map((color) => (
-              <button
-                key={`fill-${color}`}
-                onClick={() => {
-                  setFillColor(color);
-                  setCustomFill(color);
+      {(isShapeTool || isTextTool) &&
+        !["line", "freeDraw", "arrow", "text"].includes(selectedTool) && (
+          <section>
+            <h3 className="text-xs font-semibold text-[#605ebc] mb-1">Fill</h3>
+            <div className="grid grid-cols-6 gap-1">
+              {colorSwatches.map((color) => (
+                <button
+                  key={`fill-${color}`}
+                  onClick={() => {
+                    setFillColor(color);
+                    setCustomFill(color);
+                  }}
+                  className={cn(
+                    "w-full aspect-square rounded border transition-transform hover:scale-105 cursor-pointer",
+                    fillColor === color
+                      ? "ring-2 ring-[#605ebc] ring-offset-1"
+                      : "border-[#605ebc33]"
+                  )}
+                  style={{
+                    background: color === "transparent" ? transparentBg : color,
+                    backgroundSize: "12px 12px",
+                  }}
+                />
+              ))}
+              {/* Custom Fill Picker */}
+              <input
+                type="color"
+                value={customFill}
+                onChange={(e) => {
+                  setCustomFill(e.target.value);
+                  setFillColor(e.target.value);
                 }}
-                className={cn(
-                  "w-full aspect-square rounded border transition-transform hover:scale-105 cursor-pointer",
-                  fillColor === color
-                    ? "ring-2 ring-[#605ebc] ring-offset-1"
-                    : "border-[#605ebc33]"
-                )}
-                style={{
-                  background: color === "transparent" ? transparentBg : color,
-                  backgroundSize: "12px 12px",
-                }}
+                className="w-10 h-10 p-0 rounded border cursor-pointer"
               />
+            </div>
+          </section>
+        )}
+
+      {/* Stroke Style Section */}
+      {isShapeTool && selectedTool !== "freeDraw" && (
+        <section>
+          <h4 className="text-[11px] font-semibold text-[#605ebc] mb-1">
+            Stroke Style
+          </h4>
+          <div className="flex gap-1">
+            {[
+              { key: "solid", dash: "" },
+              { key: "dashed", dash: "6,4" },
+              { key: "dotted", dash: "2,4" },
+            ].map(({ key, dash }) => (
+              <button
+                key={key}
+                onClick={() => setStrokeStyle(key as any)}
+                className={cn(
+                  "flex-1 h-7 rounded border flex items-center justify-center cursor-pointer",
+                  strokeStyle === key
+                    ? "bg-[#605ebc] text-white border-[#605ebc]"
+                    : "border-[#605ebc33] hover:bg-[#8d8bd622]"
+                )}
+              >
+                <svg
+                  width="28"
+                  height="12"
+                  viewBox="0 0 28 12"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <line
+                    x1="2"
+                    y1="6"
+                    x2="26"
+                    y2="6"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeDasharray={dash}
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
             ))}
-            {/* Custom Fill Picker */}
-            <input
-              type="color"
-              value={customFill}
-              onChange={(e) => {
-                setCustomFill(e.target.value);
-                setFillColor(e.target.value);
-              }}
-              className="w-10 h-10 p-0 rounded border cursor-pointer"
-            />
           </div>
         </section>
       )}
@@ -247,42 +300,27 @@ export function PropertiesPanel({
       )}
 
       {/* Style Section */}
-      {(isShapeTool || isTextTool) && (
-        <section>
-          <h3 className="font-semibold text-gray-400 mb-1 text-[11px]">
-            Style
-          </h3>
-          <label className="flex justify-between text-[11px] mb-1">
-            <span>Opacity</span>
-            <span>{opacity}%</span>
-          </label>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={opacity}
-            onChange={(e) => setOpacity(Number(e.target.value))}
-            className="w-full h-1.5 accent-[#605ebc] bg-gray-200 dark:bg-gray-700 rounded cursor-pointer mb-2"
-          />
-          {isShapeTool && (
-            <>
-              <label className="flex justify-between text-[11px] mb-1">
-                <span>Roughness</span>
-                <span>{roughness}</span>
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="3"
-                step="1"
-                value={roughness}
-                onChange={(e) => setRoughness(Number(e.target.value))}
-                className="w-full h-1.5 accent-[#605ebc] bg-gray-200 dark:bg-gray-700 rounded cursor-pointer"
-              />
-            </>
-          )}
-        </section>
-      )}
+      {(isShapeTool || isTextTool) &&
+        selectedTool !== "line" &&
+        selectedTool !== "freeDraw" && (
+          <section>
+            <h3 className="font-semibold text-gray-400 mb-1 text-[11px]">
+              Style
+            </h3>
+            <label className="flex justify-between text-[11px] mb-1">
+              <span>Opacity</span>
+              <span>{opacity}%</span>
+            </label>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={opacity}
+              onChange={(e) => setOpacity(Number(e.target.value))}
+              className="w-full h-1.5 accent-[#605ebc] bg-gray-200 dark:bg-gray-700 rounded cursor-pointer mb-2"
+            />
+          </section>
+        )}
     </div>
   );
 }

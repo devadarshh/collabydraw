@@ -1,7 +1,9 @@
 "use client";
+
 import React, { useState, useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import { useTheme } from "next-themes";
+
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { ShapeType } from "@/types/tools";
 import { useShortcutKeys } from "@/hooks/canvas/useKeyboardShortcuts";
@@ -21,7 +23,6 @@ const CanvasBoard = () => {
   const [mode, setMode] = useState<
     "select" | "draw" | "eraser" | "freeDraw" | "grab" | null
   >("select");
-
   const [activeTool, setActiveTool] = useState<ShapeType>("select");
   const [drawingShape, setDrawingShape] = useState<ShapeType | null>(null);
   const [tempShape, setTempShape] = useState<fabric.Object | null>(null);
@@ -37,6 +38,14 @@ const CanvasBoard = () => {
     light: "#ffffff",
     dark: "#121212",
   };
+  const eraserCursor =
+    "url('data:image/svg+xml;utf8," +
+    encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="black" viewBox='0 0 24 24'>
+      <path d="M19.7 5.3a1 1 0 0 0-1.4 0L8 15.6 4.7 12.3a1 1 0 0 0-1.4 1.4l4 4a1 1 0 0 0 1.4 0l11-11a1 1 0 0 0 0-1.4z"/>
+    </svg>
+  `) +
+    "') 0 24, auto";
   const getCanvasBg = () =>
     theme === "dark" ? themeColors.dark : themeColors.light;
 
@@ -100,15 +109,42 @@ const CanvasBoard = () => {
     ) {
       setMode("draw");
       setShowPropertiesPanel(true);
+      // Disable selectability for existing shapes
+      canvas?.getObjects().forEach((obj) => {
+        obj.selectable = false;
+        obj.evented = false;
+      });
+      canvas?.renderAll();
     } else if (tool === "eraser") {
       setMode("eraser");
       setShowPropertiesPanel(false);
+
+      if (canvas) {
+        canvas.getObjects().forEach((obj) => {
+          obj.selectable = false;
+          obj.evented = false;
+        });
+
+        canvas.defaultCursor = eraserCursor;
+        canvas.hoverCursor = eraserCursor;
+        canvas.renderAll();
+      }
     } else if (tool === "grab") {
       setMode("grab");
       setShowPropertiesPanel(false);
+      canvas?.getObjects().forEach((obj) => {
+        obj.selectable = false;
+        obj.evented = false;
+      });
+      canvas?.renderAll();
     } else if (tool === "select") {
       setMode("select");
       setShowPropertiesPanel(false);
+      canvas?.getObjects().forEach((obj) => {
+        obj.selectable = true;
+        obj.evented = true;
+      });
+      canvas?.renderAll();
     }
 
     handleAddShapes(tool);

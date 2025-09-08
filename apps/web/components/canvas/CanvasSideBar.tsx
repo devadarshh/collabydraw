@@ -75,7 +75,6 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           onClose={() => setShowPropertiesPanel(false)}
         />
       </div>
-
       {/* --- Mobile Properties Panel (bottom sheet) --- */}
       <div
         className={`fixed bottom-0 left-0 w-full z-[9999] transform transition-transform duration-300 sm:hidden
@@ -88,16 +87,13 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           />
         </div>
       </div>
-
       {/* --- Desktop InfoSidebar (right sidebar) --- */}
-
       <div
         className={`hidden sm:flex sm:flex-col sm:fixed sm:top-0 sm:right-0 sm:h-screen sm:w-78 z-40 transition-transform duration-300
           ${showSidebar ? "translate-x-0" : "translate-x-full"}`}
       >
         <InfoSidebar />
       </div>
-
       {/* --- Mobile InfoSidebar (bottom sheet) --- */}
       <div
         className={`fixed bottom-0 left-0 w-full z-40 transition-transform duration-300 sm:hidden h-3/4 shadow-lg overflow-y-auto bg-white dark:bg-[#1e1e1e] border-t border-[#605ebc33]
@@ -105,7 +101,6 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
       >
         <InfoSidebar />
       </div>
-
       {/* --- Desktop Settings Button --- */}
       <div className="absolute top-4 right-4 z-50 hidden sm:block">
         <button
@@ -126,7 +121,6 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           </span>
         </button>
       </div>
-
       {/* --- Mobile Bottom Navbar --- */}
       <div className="fixed bottom-0 left-0 w-full sm:hidden bg-richblack-800 border-t border-richblack-700 text-[#605ebc] flex justify-around items-center py-2 z-[9999]">
         <button
@@ -144,16 +138,15 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           <Paintbrush className="w-6 h-6" />
           <span className="text-xs">Style</span>
         </button>
-
-        <ResponsiveSidebar
-          zoomIn={handleZoomIn}
-          zoomOut={handleZoomOut}
-          resetZoom={handleResetZoom}
-          zoom={zoom}
-          showSidebar={showSidebar}
-          setShowSidebar={setShowSidebar}
-        />
-      </div>
+      </div>{" "}
+      <ResponsiveSidebar
+        zoomIn={handleZoomIn}
+        zoomOut={handleZoomOut}
+        resetZoom={handleResetZoom}
+        zoom={zoom}
+        showSidebar={showSidebar}
+        setShowSidebar={setShowSidebar}
+      />
     </>
   );
 };

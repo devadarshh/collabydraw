@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, RefObject, useRef, Dispatch, SetStateAction } from "react";
+import { useEffect, Dispatch, SetStateAction } from "react";
 import * as fabric from "fabric";
 import { ShapeType } from "@/types/tools";
+import { useCanvasProperties } from "./useCanvasProperties";
 
 interface UseDrawShapesProps {
   canvas: fabric.Canvas | null;
-  mode: string | null;
+  mode: "select" | "draw" | "eraser" | "freeDraw" | "grab" | null;
   drawingShape: ShapeType | null;
   tempShape: fabric.Object | null;
   setTempShape: Dispatch<SetStateAction<fabric.Object | null>>;
@@ -21,6 +22,78 @@ export function useDrawShapes({
   setTempShape,
   startPoint,
 }: UseDrawShapesProps) {
+  const {
+    strokeColor,
+    fillColor,
+    strokeWidth,
+    opacity,
+    fontFamily,
+    fontSize,
+    textAlign,
+    strokeStyle,
+    textColor, // ✅ new
+  } = useCanvasProperties();
+
+  useEffect(() => {
+    if (!canvas) return;
+
+    if (mode === "freeDraw") {
+      canvas.isDrawingMode = true;
+
+      if (canvas.freeDrawingBrush) {
+        canvas.freeDrawingBrush.color = strokeColor;
+        canvas.freeDrawingBrush.width = strokeWidth;
+      }
+    } else {
+      canvas.isDrawingMode = false;
+    }
+  }, [canvas, mode, strokeColor, strokeWidth, opacity]);
+
+  useEffect(() => {
+    if (!canvas) return;
+
+    const active = canvas.getActiveObject();
+    if (!active) return;
+
+    if (active.type === "i-text") {
+      const textObj = active as fabric.IText;
+      textObj.set({
+        fill: textColor,
+        fontFamily,
+        fontSize,
+        textAlign,
+        opacity: opacity / 100,
+      });
+    } else {
+      active.set({
+        stroke: strokeColor,
+        fill: fillColor,
+        strokeWidth,
+        opacity: opacity / 100,
+      });
+    }
+
+    active.setCoords();
+    canvas.renderAll();
+  }, [
+    canvas,
+    strokeColor,
+    fillColor,
+    strokeWidth,
+    opacity,
+    fontFamily,
+    fontSize,
+    textColor,
+    textAlign,
+  ]);
+
+  useEffect(() => {
+    if (!canvas) return;
+    const selectable = mode === "select";
+    canvas.getObjects().forEach((obj) => obj.set({ selectable }));
+    canvas.renderAll();
+  }, [canvas, mode]);
+
   useEffect(() => {
     if (!canvas) return;
 
@@ -28,6 +101,7 @@ export function useDrawShapes({
     let arrowHead: fabric.Triangle | null = null;
 
     const handleMouseDown = (opt: fabric.TEvent<fabric.TPointerEvent>) => {
+      if (!canvas) return;
       const pointer = canvas.getPointer(opt.e as MouseEvent);
 
       if (mode === "eraser") {
@@ -41,6 +115,12 @@ export function useDrawShapes({
       startPoint.current = { x: pointer.x, y: pointer.y };
 
       let shape: fabric.Object | null = null;
+      const dashArray =
+        strokeStyle === "dashed"
+          ? [10, 5]
+          : strokeStyle === "dotted"
+            ? [2, 4]
+            : undefined;
 
       switch (drawingShape) {
         case "rectangle":
@@ -49,9 +129,11 @@ export function useDrawShapes({
             top: pointer.y,
             width: 0,
             height: 0,
-            fill: "rgba(0,0,0,0)",
-            stroke: "blue",
-            strokeWidth: 2,
+            fill: fillColor,
+            stroke: strokeColor,
+            strokeWidth,
+            opacity: opacity / 100,
+            strokeDashArray: dashArray,
             selectable: false,
           });
           break;
@@ -61,21 +143,24 @@ export function useDrawShapes({
             top: pointer.y,
             rx: 0,
             ry: 0,
-            strokeWidth: 2,
-            stroke: "blue",
-            fill: "rgba(0,0,0,0)",
-            selectable: true,
-            objectCaching: false,
+            strokeWidth,
+            stroke: strokeColor,
+            fill: fillColor,
+            opacity: opacity / 100,
+            selectable: false,
             originX: "center",
             originY: "center",
+            strokeDashArray: dashArray,
+            objectCaching: false,
           });
           break;
         case "line":
           shape = new fabric.Line(
             [pointer.x, pointer.y, pointer.x, pointer.y],
             {
-              stroke: "blue",
-              strokeWidth: 2,
+              stroke: strokeColor,
+              strokeWidth,
+              opacity: opacity / 100,
               selectable: false,
               objectCaching: false,
               evented: false,
@@ -86,8 +171,9 @@ export function useDrawShapes({
           arrowLine = new fabric.Line(
             [pointer.x, pointer.y, pointer.x, pointer.y],
             {
-              stroke: "blue",
-              strokeWidth: 2,
+              stroke: strokeColor,
+              strokeWidth,
+              opacity: opacity / 100,
               selectable: false,
               evented: false,
             }
@@ -99,7 +185,8 @@ export function useDrawShapes({
             originY: "center",
             width: 15,
             height: 20,
-            fill: "blue",
+            fill: strokeColor,
+            opacity: opacity / 100,
             selectable: false,
             evented: false,
           });
@@ -109,22 +196,36 @@ export function useDrawShapes({
           const text = new fabric.IText("", {
             left: pointer.x,
             top: pointer.y,
-            fontFamily: "Arial",
-            fontSize: 24,
-            fill: "blue",
+            fontFamily,
+            fontSize,
+            fill: textColor, // ✅ store color
+            textAlign,
+            opacity: opacity / 100,
             editable: true,
             width: 150,
             height: 40,
             backgroundColor: "rgba(0,0,0,0.05)",
             padding: 5,
           });
+
           canvas.add(text);
           canvas.setActiveObject(text);
+
+          text.set({
+            fill: textColor,
+            fontFamily,
+            fontSize,
+            textAlign,
+            opacity: opacity / 100,
+          });
+
           text.enterEditing();
           text.hiddenTextarea?.focus();
+
           startPoint.current = null;
           setTempShape(null);
-          return;
+          break;
+
         case "diamond":
           shape = new fabric.Polygon(
             [
@@ -136,10 +237,12 @@ export function useDrawShapes({
             {
               left: pointer.x,
               top: pointer.y,
-              fill: "transparent",
-              stroke: "blue",
-              strokeWidth: 2,
+              fill: fillColor,
+              stroke: strokeColor,
+              strokeWidth,
+              opacity: opacity / 100,
               selectable: false,
+              strokeDashArray: dashArray,
               objectCaching: false,
             }
           );
@@ -168,19 +271,20 @@ export function useDrawShapes({
           top: Math.min(pointer.y, y),
         });
       }
+
       if (drawingShape === "ellipse" && tempShape instanceof fabric.Ellipse) {
-        const rx = Math.abs(pointer.x - x) / 2;
-        const ry = Math.abs(pointer.y - y) / 2;
         tempShape.set({
-          rx,
-          ry,
+          rx: Math.abs(pointer.x - x) / 2,
+          ry: Math.abs(pointer.y - y) / 2,
           left: (pointer.x + x) / 2,
           top: (pointer.y + y) / 2,
         });
       }
+
       if (drawingShape === "line" && tempShape instanceof fabric.Line) {
         tempShape.set({ x2: pointer.x, y2: pointer.y });
       }
+
       if (drawingShape === "arrow" && arrowLine && arrowHead) {
         arrowLine.set({ x2: pointer.x, y2: pointer.y });
         arrowHead.set({
@@ -193,12 +297,11 @@ export function useDrawShapes({
             90,
         });
       }
+
       if (drawingShape === "diamond" && tempShape instanceof fabric.Polygon) {
-        const width = Math.abs(pointer.x - x);
-        const height = Math.abs(pointer.y - y);
         tempShape.set({
-          width,
-          height,
+          width: Math.abs(pointer.x - x),
+          height: Math.abs(pointer.y - y),
           left: Math.min(pointer.x, x),
           top: Math.min(pointer.y, y),
         });
@@ -226,7 +329,8 @@ export function useDrawShapes({
         arrowHead = null;
         startPoint.current = null;
       } else if (tempShape) {
-        tempShape.set({ selectable: true, evented: true });
+        // Only selectable in "select" mode
+        tempShape.set({ selectable: false, evented: true });
         tempShape.setCoords();
         canvas.renderAll();
         setTempShape(null);

@@ -57,7 +57,8 @@ export function ResponsiveSidebar({
         <InfoSidebar />
       </div>
 
-      <div className="hidden sm:flex sm:flex-col sm:fixed sm:left-4 sm:bottom-4 sm:z-50 gap-2">
+      {/* Desktop & Tablet ZoomControl */}
+      <div className="hidden sm:flex flex-col fixed left-6 bottom-6 z-[999] gap-2 bg-richblack-800 p-2 rounded-lg shadow-lg">
         <ZoomControl
           zoomIn={zoomIn}
           zoomOut={zoomOut}
