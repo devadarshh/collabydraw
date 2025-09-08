@@ -15,6 +15,8 @@ import { useHandleAddShapes } from "@/hooks/canvas/useHandleAddShapes";
 import { useGrabMode } from "@/hooks/canvas/useGrabMode";
 import { Toolbar } from "./ToolBar";
 import { CanvasSidebar } from "./CanvasSideBar";
+import { useCanvasZoom } from "@/hooks/canvas/useCanvasZoom";
+import { toast } from "sonner";
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -66,7 +68,7 @@ const CanvasBoard = () => {
       window.removeEventListener("resize", handleResize);
       initCanvas.dispose();
     };
-  }, [theme]);
+  }, []);
 
   useGrabMode({ canvas, mode });
   useDrawShapes({
@@ -77,7 +79,7 @@ const CanvasBoard = () => {
     setTempShape,
     startPoint,
   });
-
+  useCanvasZoom(canvas, setZoom);
   const handleAddShapes = useHandleAddShapes({
     canvas,
     setMode,
@@ -115,21 +117,47 @@ const CanvasBoard = () => {
       setShowPropertiesPanel(false);
 
       if (canvas) {
+        // Make all objects unselectable
         canvas.getObjects().forEach((obj) => {
           obj.selectable = false;
           obj.evented = false;
         });
-        const eraserSvg = ReactDOMServer.renderToStaticMarkup(
-          <Eraser color="black" size={24} />
-        );
 
+        // Determine eraser color based on theme
+        const eraserColor = theme === "dark" ? "#ffffff" : "#000000";
+
+        // Render the eraser SVG with dynamic color
+        const eraserSvg = ReactDOMServer.renderToStaticMarkup(
+          <Eraser color={eraserColor} size={24} />
+        );
         const eraserCursor = `url("data:image/svg+xml;utf8,${encodeURIComponent(
           eraserSvg
         )}") 12 12, auto`;
 
+        // Apply cursor to canvas
+        const canvasEl = canvas.getElement();
         canvas.defaultCursor = eraserCursor;
         canvas.hoverCursor = eraserCursor;
+        canvasEl.style.cursor = eraserCursor;
         canvas.renderAll();
+
+        // Persist cursor on mouse events to prevent flicker
+        const updateCursor = () => {
+          canvasEl.style.cursor = eraserCursor;
+        };
+        canvas.on("mouse:over", updateCursor);
+        canvas.on("mouse:out", updateCursor);
+        canvas.on("mouse:down", updateCursor);
+        canvas.on("mouse:up", updateCursor);
+
+        // Cleanup function when switching tools
+        const removeCursorEvents = () => {
+          canvas.off("mouse:over", updateCursor);
+          canvas.off("mouse:out", updateCursor);
+          canvas.off("mouse:down", updateCursor);
+          canvas.off("mouse:up", updateCursor);
+        };
+        (canvas as any)._eraserCleanup = removeCursorEvents;
       }
     } else if (tool === "grab") {
       setMode("grab");
@@ -151,6 +179,18 @@ const CanvasBoard = () => {
 
     handleAddShapes(tool);
   };
+  const clearCanvas = () => {
+    if (!canvas) return;
+
+    // Remove all objects
+    canvas.getObjects().forEach((obj) => canvas.remove(obj));
+
+    // Reset background
+    canvas.backgroundColor = getCanvasBg();
+
+    canvas.renderAll();
+    toast.success("Canvas cleared successfully!");
+  };
 
   useShortcutKeys({ handleAddShapes: handleShapeSelect });
   useCanvasTheme({ canvas });
@@ -170,6 +210,7 @@ const CanvasBoard = () => {
         canvas={canvas}
         zoom={zoom}
         setZoom={setZoom}
+        onClearCanvas={clearCanvas}
       />
 
       <canvas ref={canvasRef} className="w-full h-full" />

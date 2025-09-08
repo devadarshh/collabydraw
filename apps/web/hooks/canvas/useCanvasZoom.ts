@@ -11,22 +11,34 @@ export function useCanvasZoom(
 
     const wheelHandler = (opt: fabric.TEvent<WheelEvent>) => {
       const evt = opt.e as WheelEvent;
+
+      // Only zoom if Ctrl (or Cmd) is pressed
       if (!evt.ctrlKey && !evt.metaKey) return;
-
-      let zoom = canvas.getZoom();
-      zoom *= 1 - evt.deltaY / 1000;
-      if (zoom > 5) zoom = 5;
-      if (zoom < 0.5) zoom = 0.5;
-
-      const point = new fabric.Point(evt.offsetX, evt.offsetY);
-      canvas.zoomToPoint(point, zoom);
 
       evt.preventDefault();
       evt.stopPropagation();
-      setZoom(Math.round(canvas.getZoom() * 100));
+
+      // Calculate zoom factor
+      let zoom = canvas.getZoom();
+      const zoomFactor = 0.05; // 5% per scroll step
+      zoom *= evt.deltaY < 0 ? 1 + zoomFactor : 1 - zoomFactor;
+
+      // Clamp zoom
+      zoom = Math.min(Math.max(zoom, 0.2), 5);
+
+      // Use canvas coordinates
+      const rect = canvas.getElement().getBoundingClientRect();
+      const pointer = new fabric.Point(
+        evt.clientX - rect.left,
+        evt.clientY - rect.top
+      );
+
+      canvas.zoomToPoint(pointer, zoom);
+      setZoom(Math.round(zoom * 100));
     };
 
     canvas.on("mouse:wheel", wheelHandler);
+
     return () => {
       canvas.off("mouse:wheel", wheelHandler);
     };

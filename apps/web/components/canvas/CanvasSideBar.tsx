@@ -18,6 +18,7 @@ interface CanvasSidebarProps {
   canvas: fabric.Canvas | null;
   zoom: number;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
+  onClearCanvas?: () => void;
 }
 
 export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
@@ -29,6 +30,7 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
   canvas,
   zoom,
   setZoom,
+  onClearCanvas,
 }) => {
   useEffect(() => {
     const toolsWithProperties = tools
@@ -80,7 +82,7 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
         className={`hidden sm:flex sm:flex-col sm:fixed sm:top-0 sm:right-0 sm:h-screen sm:w-78 z-40 transition-transform duration-300
           ${showSidebar ? "translate-x-0" : "translate-x-full"}`}
       >
-        <InfoSidebar />
+        <InfoSidebar onClearCanvas={onClearCanvas} />
       </div>
 
       {/* --- Desktop Settings Button --- */}
