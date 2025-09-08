@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import { useTheme } from "next-themes";
+import { Eraser } from "lucide-react";
+import ReactDOMServer from "react-dom/server";
 
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { ShapeType } from "@/types/tools";
@@ -38,14 +40,7 @@ const CanvasBoard = () => {
     light: "#ffffff",
     dark: "#121212",
   };
-  const eraserCursor =
-    "url('data:image/svg+xml;utf8," +
-    encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="black" viewBox='0 0 24 24'>
-      <path d="M19.7 5.3a1 1 0 0 0-1.4 0L8 15.6 4.7 12.3a1 1 0 0 0-1.4 1.4l4 4a1 1 0 0 0 1.4 0l11-11a1 1 0 0 0 0-1.4z"/>
-    </svg>
-  `) +
-    "') 0 24, auto";
+
   const getCanvasBg = () =>
     theme === "dark" ? themeColors.dark : themeColors.light;
 
@@ -124,6 +119,13 @@ const CanvasBoard = () => {
           obj.selectable = false;
           obj.evented = false;
         });
+        const eraserSvg = ReactDOMServer.renderToStaticMarkup(
+          <Eraser color="black" size={24} />
+        );
+
+        const eraserCursor = `url("data:image/svg+xml;utf8,${encodeURIComponent(
+          eraserSvg
+        )}") 12 12, auto`;
 
         canvas.defaultCursor = eraserCursor;
         canvas.hoverCursor = eraserCursor;
