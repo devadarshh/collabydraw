@@ -17,7 +17,6 @@ import { useGrabMode } from "@/hooks/canvas/useGrabMode";
 import { Toolbar } from "./ToolBar";
 import { CanvasSidebar } from "./CanvasSideBar";
 import { useCanvasZoom } from "@/hooks/canvas/useCanvasZoom";
-import { toast } from "sonner";
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -58,7 +57,27 @@ const CanvasBoard = () => {
     });
     applyFabricConfig(initCanvas);
     setCanvas(initCanvas);
+    function saveCanvasToLocal() {
+      if (!initCanvas) return;
+      const json = initCanvas.toJSON();
+      localStorage.setItem("fabric-canvas", JSON.stringify(json));
+    }
+    const saved = localStorage.getItem("fabric-canvas");
+    if (saved) {
+      initCanvas.loadFromJSON(saved, () => {
+        setTimeout(() => {
+          initCanvas.renderAll();
+        }, 0);
 
+        initCanvas.getObjects().forEach((obj) => {
+          obj.selectable = true;
+          obj.evented = true;
+        });
+      });
+    }
+    initCanvas.on("object:added", saveCanvasToLocal);
+    initCanvas.on("object:modified", saveCanvasToLocal);
+    initCanvas.on("object:removed", saveCanvasToLocal);
     const handleResize = () => {
       initCanvas.setWidth(parent.clientWidth);
       initCanvas.setHeight(parent.clientHeight);
@@ -107,10 +126,10 @@ const CanvasBoard = () => {
     ) {
       setMode("draw");
       setShowPropertiesPanel(true);
-      // Disable selectability for existing shapes
       canvas?.getObjects().forEach((obj) => {
-        obj.selectable = false;
-        obj.evented = false;
+        obj.selectable = false; // cannot move/resize
+        obj.evented = true; // stays interactive (visible + hover events work)
+        obj.hoverCursor = "default";
       });
       canvas?.renderAll();
     } else if (tool === "eraser") {
@@ -121,7 +140,7 @@ const CanvasBoard = () => {
         // Make all objects unselectable
         canvas.getObjects().forEach((obj) => {
           obj.selectable = false;
-          obj.evented = false;
+          obj.evented = true;
         });
 
         // Determine eraser color based on theme
