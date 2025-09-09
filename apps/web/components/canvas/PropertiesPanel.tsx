@@ -76,7 +76,7 @@ export function PropertiesPanel({
       className={cn(
         "flex flex-col w-64 sm:w-72 bg-white dark:bg-[#1e1e1e] text-[#111] dark:text-[#eee]",
         "border-l border-[#605ebc33] p-3 sm:p-4 space-y-3 sm:space-y-4",
-        "overflow-y-auto max-h-[70vh] sm:max-h-[75vh]",
+        "overflow-y-auto max-h-[85vh] sm:max-h-[90vh]",
         "transition-transform duration-300 ease-in-out",
         className
       )}

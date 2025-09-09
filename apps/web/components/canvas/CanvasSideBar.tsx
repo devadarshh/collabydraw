@@ -18,7 +18,6 @@ interface CanvasSidebarProps {
   canvas: fabric.Canvas | null;
   zoom: number;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
-  onClearCanvas?: () => void;
 }
 
 export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
@@ -30,7 +29,6 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
   canvas,
   zoom,
   setZoom,
-  onClearCanvas,
 }) => {
   useEffect(() => {
     const toolsWithProperties = tools
@@ -82,7 +80,7 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
         className={`hidden sm:flex sm:flex-col sm:fixed sm:top-0 sm:right-0 sm:h-screen sm:w-78 z-40 transition-transform duration-300
           ${showSidebar ? "translate-x-0" : "translate-x-full"}`}
       >
-        <InfoSidebar onClearCanvas={onClearCanvas} />
+        <InfoSidebar />
       </div>
 
       {/* --- Desktop Settings Button --- */}
@@ -107,7 +105,7 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
       </div>
       {/* --- Mobile Properties Panel --- */}
       <div
-        className={`fixed left-0 right-0 bottom-0 z-40 sm:hidden h-2/4 shadow-lg overflow-y-auto bg-richblack-800 text-yellow-400 border-t border-[#605ebc33] transform transition-transform duration-300 ${
+        className={`fixed left-0 right-0 bottom-0 z-40 sm:hidden h-[60vh] shadow-lg overflow-y-auto bg-richblack-800 text-yellow-400 border-t border-[#605ebc33] transform transition-transform duration-300 ${
           showPropertiesPanel ? "translate-y-0" : "translate-y-full"
         }`}
       >
@@ -136,7 +134,6 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
         resetZoom={handleResetZoom}
         zoom={zoom}
         showSidebar={showSidebar}
-        setShowSidebar={setShowSidebar}
       />
     </>
   );

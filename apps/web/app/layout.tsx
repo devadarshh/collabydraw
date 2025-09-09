@@ -3,6 +3,7 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Roboto } from "next/font/google";
+import CreateRoomDialog from "@/components/CreateRoomDialog";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -27,6 +28,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster position="bottom-right" />
           {children}
+          <CreateRoomDialog />
         </ThemeProvider>
       </body>
     </html>

@@ -18,27 +18,47 @@ import {
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+
 import { useTheme } from "next-themes";
+import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
+import { useRoomDialog } from "@/hooks/useRoomDialog";
+import { toast } from "sonner";
 
 interface InfoSidebarProps {
   className?: string;
   isLoggedIn?: boolean;
-  onClearCanvas?: () => void;
 }
 
 const socialLinks = [
-  { id: "github", name: "GitHub", icon: Github, url: "#" },
-  { id: "twitter", name: "Twitter", icon: Twitter, url: "#" },
-  { id: "linkedin", name: "LinkedIn", icon: Linkedin, url: "#" },
+  {
+    id: "github",
+    name: "GitHub",
+    icon: Github,
+    url: "https://github.com/devadarshh",
+  },
+  {
+    id: "twitter",
+    name: "Twitter",
+    icon: Twitter,
+    url: "https://x.com/imadarsh2002",
+  },
+  {
+    id: "linkedin",
+    name: "LinkedIn",
+    icon: Linkedin,
+    url: "https://www.linkedin.com/in/imadarsh-singh/",
+  },
 ];
 
 export function InfoSidebar({
   className,
   isLoggedIn = false,
-  onClearCanvas,
 }: InfoSidebarProps) {
   const colorOptions = ["#ffffff", "#f0f0f0", "#121212", "#fef3c7", "#d1fae5"];
   const { theme, setTheme } = useTheme();
+  const { backgroundColor, clearCanvas, setBackgroundColor } = useCanvasStore();
+  const { setOpen } = useRoomDialog();
 
   const SectionTitle = ({ children }: { children: React.ReactNode }) => (
     <h3 className="text-xs font-semibold text-[#605ebc] uppercase tracking-wider mb-2">
@@ -57,7 +77,7 @@ export function InfoSidebar({
         className
       )}
     >
-      <div className="space-y-4 mt-8">
+      <div className="space-y-4 mt-2">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Settings2 className="w-5 h-5 text-[#605ebc]" />
@@ -70,12 +90,14 @@ export function InfoSidebar({
 
         <div className="flex flex-col gap-2 mb-4">
           {!isLoggedIn && (
-            <Button
-              size="sm"
-              className="border border-[#605ebc33] hover:bg-[#8d8bd622] cursor-pointer"
-            >
-              Create Account
-            </Button>
+            <Link href="/auth/signup" passHref>
+              <Button
+                size="sm"
+                className="border border-[#605ebc33] hover:bg-[#8d8bd622] cursor-pointer"
+              >
+                Create Account
+              </Button>
+            </Link>
           )}
           {isLoggedIn && (
             <Button
@@ -90,10 +112,16 @@ export function InfoSidebar({
         <section>
           <SectionTitle>File Operations</SectionTitle>
           <div className="flex flex-col gap-2">
-            <button className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer">
+            <button
+              onClick={() => toast.info("Import Drawing – Coming soon 🚀")}
+              className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer"
+            >
               <Upload className="w-4 h-4 text-[#605ebc]" /> Import Drawing
             </button>
-            <button className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer">
+            <button
+              onClick={() => toast.info("Export Drawing – Coming soon 🚀")}
+              className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer"
+            >
               <Download className="w-4 h-4 text-[#605ebc]" /> Export Drawing
             </button>
           </div>
@@ -106,7 +134,13 @@ export function InfoSidebar({
               <button
                 key={color}
                 style={{ backgroundColor: color }}
-                className="w-6 h-6 rounded border border-[#605ebc33] hover:border-[#605ebc55] cursor-pointer"
+                className={cn(
+                  "w-6 h-6 rounded border transition-transform  duration-200 cursor-pointer hover:scale-105 hover:ring-2 hover:ring-[#605ebc] hover:ring-offset-1",
+                  backgroundColor === color
+                    ? "ring-2 ring-[#605ebc] ring-offset-1" // stays after click
+                    : "border-[#605ebc33]"
+                )}
+                onClick={() => setBackgroundColor(color)}
               />
             ))}
           </div>
@@ -114,10 +148,12 @@ export function InfoSidebar({
             <input
               type="color"
               className="w-6 h-6 rounded border border-[#605ebc33] cursor-pointer"
+              onChange={(e) => setBackgroundColor(e.target.value)}
             />
             <Input
               className="text-xs flex-1 border border-[#605ebc33]"
               placeholder="#ffffff"
+              onBlur={(e) => setBackgroundColor(e.target.value)} // 🔥 updat
             />
           </div>
         </section>
@@ -125,11 +161,14 @@ export function InfoSidebar({
         <section>
           <SectionTitle>Sharing</SectionTitle>
           <div className="flex flex-col gap-2">
-            <button className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer">
+            <button
+              onClick={() => setOpen(true)}
+              className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer"
+            >
               <Users className="w-4 h-4 text-[#605ebc]" /> Live Collaboration
             </button>
             <button
-              onClick={onClearCanvas}
+              onClick={() => clearCanvas()}
               className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-red-500 text-red-500 hover:bg-red-100 transition-all cursor-pointer"
             >
               <Trash2 className="w-4 h-4 text-red-500" /> Clear Canvas

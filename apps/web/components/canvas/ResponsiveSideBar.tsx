@@ -11,7 +11,6 @@ interface ResponsiveSidebarProps {
   resetZoom: () => void;
   zoom: number;
   showSidebar: boolean;
-  setShowSidebar: (value: boolean) => void;
 }
 
 export function ResponsiveSidebar({
@@ -20,7 +19,6 @@ export function ResponsiveSidebar({
   resetZoom,
   zoom,
   showSidebar,
-  setShowSidebar,
 }: ResponsiveSidebarProps) {
   return (
     <>

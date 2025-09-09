@@ -5,6 +5,7 @@ import * as fabric from "fabric";
 import { useTheme } from "next-themes";
 import { Eraser } from "lucide-react";
 import ReactDOMServer from "react-dom/server";
+import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
 
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { ShapeType } from "@/types/tools";
@@ -21,7 +22,7 @@ import { toast } from "sonner";
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  const [canvas, setCanvas] = useState<fabric.Canvas | null>(null);
+  const { canvas, setCanvas } = useCanvasStore();
   const [zoom, setZoom] = useState<number>(100);
 
   const [mode, setMode] = useState<
@@ -179,18 +180,6 @@ const CanvasBoard = () => {
 
     handleAddShapes(tool);
   };
-  const clearCanvas = () => {
-    if (!canvas) return;
-
-    // Remove all objects
-    canvas.getObjects().forEach((obj) => canvas.remove(obj));
-
-    // Reset background
-    canvas.backgroundColor = getCanvasBg();
-
-    canvas.renderAll();
-    toast.success("Canvas cleared successfully!");
-  };
 
   useShortcutKeys({ handleAddShapes: handleShapeSelect });
   useCanvasTheme({ canvas });
@@ -210,7 +199,6 @@ const CanvasBoard = () => {
         canvas={canvas}
         zoom={zoom}
         setZoom={setZoom}
-        onClearCanvas={clearCanvas}
       />
 
       <canvas ref={canvasRef} className="w-full h-full" />
