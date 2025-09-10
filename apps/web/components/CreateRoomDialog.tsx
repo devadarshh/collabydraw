@@ -19,15 +19,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 export default function CreateRoomDialog() {
   const { open, setOpen } = useRoomDialog();
-  const { isLoggedIn, user, token } = useAuthStore();
+  const { isLoggedIn, token } = useAuthStore();
   const { ws, isConnected, setIsConnected, setWs, setRoomId } = useWsStore();
-  const [roomId, setLocalRoomId] = useState<string>("");
+  const [localRoomId, setLocalRoomId] = useState<string>("");
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomFromUrl = searchParams.get("room");
 
-  // Auto-join if URL has ?room=
   useEffect(() => {
     if (roomFromUrl && isLoggedIn && token && !isConnected) {
       joinRoom(roomFromUrl);
@@ -49,37 +48,10 @@ export default function CreateRoomDialog() {
       setWs(websocket);
       setRoomId(newRoomId);
       router.replace(`/?room=${newRoomId}`); // update URL
-      toast.success(`Joined room ${newRoomId}`);
     };
 
-    websocket.onmessage = (event) => {
-      let msg;
-      try {
-        msg = JSON.parse(event.data);
-      } catch {
-        console.log("Message from server (non-JSON):", event.data);
-        return;
-      }
-
-      console.log("Message from server:", msg);
-
-      // Handle messages
-      if (msg.type === "USER_LEFT") {
-        toast.info(`${msg.userName} left the room`);
-      }
-      if (msg.type === "ROOM_JOINED") {
-        toast.success(msg.message);
-      }
-      if (msg.type === "LOAD_SHAPES") {
-        // load existing shapes on canvas
-        console.log("Existing shapes:", msg.shapes);
-        // here: renderShapesOnCanvas(msg.shapes);
-      }
-      if (msg.type === "NEW_SHAPE") {
-        // render new shape on canvas
-        // renderShapeOnCanvas(msg.shape);
-      }
-    };
+    // REMOVED websocket.onmessage handler from here.
+    // All message logic is now centralized in useWebSocketManager.
 
     websocket.onclose = () => {
       setIsConnected(false);
@@ -123,14 +95,14 @@ export default function CreateRoomDialog() {
   };
 
   const handleShareRoom = () => {
-    if (!roomId) return toast.error("Start a session first!");
+    if (!localRoomId) return toast.error("Start a session first!");
     navigator.clipboard.writeText(window.location.href);
     toast.success("Room URL copied to clipboard!");
   };
 
   const handleCloseSession = () => {
-    if (ws && roomId) {
-      ws.send(JSON.stringify({ type: "LEAVE_ROOM", roomId }));
+    if (ws && localRoomId) {
+      ws.send(JSON.stringify({ type: "LEAVE_ROOM", roomId: localRoomId }));
       ws.close();
       setIsConnected(false);
       setWs(null);
@@ -143,6 +115,7 @@ export default function CreateRoomDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
+      {/* ... JSX remains the same ... */}
       <DialogOverlay className="bg-black/40 backdrop-blur-sm fixed inset-0 flex items-center justify-center" />
       <DialogContent className="w-[90%] max-w-lg mx-auto rounded-xl border border-dialog-border-color shadow-lg bg-white dark:bg-richblack-900 p-6 sm:p-8 space-y-6">
         <DialogHeader className="space-y-4">

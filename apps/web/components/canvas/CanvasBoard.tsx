@@ -3,12 +3,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import { useTheme } from "next-themes";
-import ReactDOMServer from "react-dom/server";
-import { Eraser } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
 import { useAuthStore } from "@/hooks/useAuthStore";
-
+import { useWsStore } from "@/hooks/useWsStore";
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { ShapeType } from "@/types/tools";
 
@@ -21,16 +20,14 @@ import { useCanvasTheme } from "@/hooks/canvas/UseCanvasTheme";
 import { useShortcutKeys } from "@/hooks/canvas/useKeyboardShortcuts";
 import { useHandleAddShapes } from "@/hooks/canvas/useHandleAddShapes";
 import { useGrabMode } from "@/hooks/canvas/useGrabMode";
-import { useWebSocketShapes } from "@/hooks/useWebSocketShapes";
-import { useWsStore } from "@/hooks/useWsStore";
-import { useSearchParams } from "next/navigation";
+// Import the new centralized hook
+import { useWebSocketManager } from "@/hooks/useWebSocketManager";
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { canvas, setCanvas } = useCanvasStore();
   const { user } = useAuthStore();
   const [zoom, setZoom] = useState(100);
-  const { ws, isConnected } = useWsStore();
 
   const [mode, setMode] = useState<
     "select" | "draw" | "eraser" | "freeDraw" | "grab" | null
@@ -60,11 +57,11 @@ const CanvasBoard = () => {
   });
 
   const handleShapeSelect = (tool: ShapeType) => {
+    // This function's logic remains the same
     setDrawingShape(tool);
     setActiveTool(tool);
     setSelectedTool(tool);
 
-    // set mode & properties panel
     if (
       [
         "rectangle",
@@ -120,6 +117,7 @@ const CanvasBoard = () => {
     applyFabricConfig(initCanvas);
     setCanvas(initCanvas);
 
+    // Local storage logic remains the same
     const saved = localStorage.getItem("fabric-canvas");
     if (saved) {
       initCanvas.loadFromJSON(saved, () => {
@@ -161,14 +159,12 @@ const CanvasBoard = () => {
   });
   useCanvasZoom(canvas, setZoom);
 
-  // Real-time collaboration
-  const roomId = useSearchParams()?.get("room") ?? "room-123";
-  //@ts-ignore
-  const token = user?.token ?? "";
-  useWebSocketShapes(roomId, token);
+  // Real-time collaboration - USE THE NEW HOOK
+  useWebSocketManager();
 
   return (
     <div className="relative w-full h-full">
+      {/* ... JSX remains the same ... */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] sm:w-auto max-w-lg flex justify-center px-2 sm:px-0">
         <Toolbar activeTool={activeTool} onToolChange={handleShapeSelect} />
       </div>
