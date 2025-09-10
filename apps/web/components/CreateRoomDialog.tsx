@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import axios from "axios";
 import { Button } from "./ui/button";
 import { Play, XCircle } from "lucide-react";
@@ -17,7 +17,7 @@ import { useWsStore } from "@/hooks/useWsStore";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function CreateRoomDialog() {
+function CreateRoomDialogContent() {
   const { open, setOpen } = useRoomDialog();
   const { isLoggedIn, token } = useAuthStore();
   const { ws, isConnected, setIsConnected, setWs, setRoomId } = useWsStore();
@@ -33,6 +33,7 @@ export default function CreateRoomDialog() {
     } else if (roomFromUrl && !isLoggedIn) {
       toast.error("You must be logged in to join this room");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomFromUrl, isLoggedIn, token]);
 
   const joinRoom = async (newRoomId: string) => {
@@ -47,11 +48,8 @@ export default function CreateRoomDialog() {
       setIsConnected(true);
       setWs(websocket);
       setRoomId(newRoomId);
-      router.replace(`/?room=${newRoomId}`); // update URL
+      router.replace(`/?room=${newRoomId}`);
     };
-
-    // REMOVED websocket.onmessage handler from here.
-    // All message logic is now centralized in useWebSocketManager.
 
     websocket.onclose = () => {
       setIsConnected(false);
@@ -115,7 +113,6 @@ export default function CreateRoomDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {/* ... JSX remains the same ... */}
       <DialogOverlay className="bg-black/40 backdrop-blur-sm fixed inset-0 flex items-center justify-center" />
       <DialogContent className="w-[90%] max-w-lg mx-auto rounded-xl border border-dialog-border-color shadow-lg bg-white dark:bg-richblack-900 p-6 sm:p-8 space-y-6">
         <DialogHeader className="space-y-4">
@@ -163,5 +160,13 @@ export default function CreateRoomDialog() {
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+export default function CreateRoomDialog() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateRoomDialogContent />
+    </Suspense>
   );
 }

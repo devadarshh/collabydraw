@@ -3,11 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import { useTheme } from "next-themes";
-import { useSearchParams } from "next/navigation";
 
 import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
 import { useAuthStore } from "@/hooks/useAuthStore";
-import { useWsStore } from "@/hooks/useWsStore";
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { ShapeType } from "@/types/tools";
 

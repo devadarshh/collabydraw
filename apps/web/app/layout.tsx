@@ -19,41 +19,6 @@ export const metadata: Metadata = {
   },
   description:
     "Real-time collaborative whiteboard for sketching diagrams and wireframes with a hand-drawn feel.",
-  keywords: [
-    "collaboration",
-    "drawing",
-    "canvas",
-    "nextjs",
-    "fabricjs",
-    "real-time",
-  ],
-  authors: [{ name: "Adarsh Singh", url: "https://github.com/devadarshh" }],
-  creator: "Adarsh Singh", // replace with your domain
-
-  openGraph: {
-    title: "CollabyDraw - Real-time Collaborative Drawing",
-    description:
-      "Real-time collaborative whiteboard for sketching diagrams and wireframes with a hand-drawn feel.",
-    siteName: "CollabyDraw",
-    images: [
-      {
-        url: "/favicon.png", 
-        width: 1200,
-        height: 630,
-        alt: "CollabyDraw - Real-time Collaborative Drawing",
-      },
-    ],
-    locale: "en_US",
-    type: "website",
-  },
-
-  icons: {
-    icon: "/favicon.png",
-    shortcut: "/favicon-16x16.png",
-    apple: "/apple-touch-icon.png",
-  },
-
-  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({

@@ -41,7 +41,7 @@ export const useWebSocketManager = () => {
         case "USER_LEFT":
           toast.info(`${msg.userName} left the room`);
           break;
-        
+
         case "LOAD_SHAPES":
           // msg.shapes is an array of serialized shape data
           // To load, we construct a JSON structure that Fabric's loadFromJSON understands
@@ -49,9 +49,9 @@ export const useWebSocketManager = () => {
           canvas.loadFromJSON(canvasJSON, () => {
             canvas.renderAll();
             // Make all objects non-selectable by default after loading
-            canvas.forEachObject(obj => {
-                obj.selectable = false;
-                obj.evented = true;
+            canvas.forEachObject((obj) => {
+              obj.selectable = false;
+              obj.evented = true;
             });
           });
           break;
@@ -61,20 +61,34 @@ export const useWebSocketManager = () => {
           if (!shapeJSON || !shapeJSON.id) return;
 
           // Check if the shape already exists to prevent duplicates (echo)
-          const existingObject = canvas.getObjects().find(obj => obj.id === shapeJSON.id);
+          const existingObject = canvas
+            .getObjects()
+
+            .find(
+              (obj) =>
+                // @ts-ignore
+                obj.id === shapeJSON.id
+            );
           if (existingObject) {
             return; // It's an echo of a shape we just drew, so ignore it.
           }
-          
+
           // Use fabric's utility to revive the object from its JSON representation
-          fabric.util.enlivenObjects([shapeJSON], (objects) => {
-            if (objects.length > 0) {
-              const newObject = objects[0];
-              newObject.set({ selectable: false, evented: true });
-              canvas.add(newObject);
-              canvas.renderAll();
-            }
-          }, "fabric");
+          // @ts-ignore
+          fabric.util.enlivenObjects(
+            [shapeJSON],
+            // @ts-ignore
+            (objects) => {
+              if (objects.length > 0) {
+                const newObject = objects[0];
+                newObject.set({ selectable: false, evented: true });
+                canvas.add(newObject);
+                canvas.renderAll();
+              }
+            },
+            // @ts-ignore
+            "fabric"
+          );
           break;
 
         case "ERROR":
