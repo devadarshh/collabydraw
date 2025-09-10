@@ -34,22 +34,20 @@ const RegisterPage = () => {
     try {
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/register`,
-        {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        }
+        formData
       );
 
-      const user = { name: formData.name, email: formData.email };
-      login(user); // ✅ save user to zustand
+      const userData = res.data.data;
+      const token = res.data.token;
+
+      const user = {
+        name: userData.name,
+        email: userData.email,
+      };
 
       toast.success("Account created successfully!");
-      console.log("Response:", res.data);
-
       router.push("/");
     } catch (error: any) {
-      console.error("Registration failed:", error);
       toast.error(error.response?.data?.message || "Something went wrong");
     } finally {
       setLoading(false);

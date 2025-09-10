@@ -7,6 +7,20 @@ dotenv.config();
 const PORT = process.env.WS_PORT || 8080;
 const wss = new WebSocketServer({ port: Number(PORT) });
 
+// ------------------- TYPES -------------------
+type ShapeData = {
+  id: string;
+  type: string; // rectangle, ellipse, line, freeDraw, etc
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  color?: string;
+  strokeWidth?: number;
+  points?: { x: number; y: number }[];
+  text?: string;
+};
+
 type User = {
   userId: string;
   userName: string;
@@ -23,7 +37,8 @@ type Room = {
 
 type ClientMessage =
   | { type: "JOIN_ROOM"; roomId: string }
-  | { type: "LEAVE_ROOM"; roomId: string };
+  | { type: "LEAVE_ROOM"; roomId: string }
+  | { type: "CREATE_SHAPE"; roomId: string; shape: ShapeData };
 
 type ServerMessage =
   | { type: "ROOM_JOINED"; roomId: string; message: string }
@@ -34,6 +49,8 @@ type ServerMessage =
       userName: string;
       participants: { userId: string; userName: string }[];
     }
+  | { type: "NEW_SHAPE"; shape: ShapeData }
+  | { type: "LOAD_SHAPES"; shapes: ShapeData[] }
   | { type: "ERROR"; message: string };
 
 let users: User[] = [];
@@ -42,21 +59,20 @@ let rooms: Room[] = [];
 if (!process.env.JWT_SECRET_KEY) {
   throw new Error("JWT_SECRET_KEY is ABSOLUTELY REQUIRED");
 }
+const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
+
 interface JwtPayload {
   id: string;
   email: string;
   name: string;
 }
-const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 
+// ------------------- AUTH -------------------
 function authUser(token: string) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET_KEY) as JwtPayload;
 
-    if (!decoded.id) {
-      console.error("No valid user ID in token");
-      return null;
-    }
+    if (!decoded.id) return null;
 
     return {
       userId: decoded.id,
@@ -64,34 +80,33 @@ function authUser(token: string) {
       email: decoded.email ?? "",
     };
   } catch (error) {
-    console.error("Verification failed!", error);
+    console.error("JWT verification failed", error);
     return null;
   }
 }
 
+// ------------------- UTILS -------------------
+function getCurrentParticipantsInRoom(roomId: string) {
+  const room = rooms.find((r) => r.roomId === roomId);
+  if (!room) return [];
+  return room.users.map((u) => ({ userId: u.userId, userName: u.userName }));
+}
+
+// ------------------- WEBSOCKET CONNECTION -------------------
 wss.on("connection", (ws, req) => {
   ws.send("SUBSCRIBED");
+
   const url = req.url;
-  if (!url) {
-    console.error("No Valid Url found in the request");
-    return;
-  }
-  const queryParams = new URLSearchParams(url?.split("?")[1]);
+  if (!url) return ws.close();
+
+  const queryParams = new URLSearchParams(url.split("?")[1]);
   const token = queryParams.get("token");
   const roomId = queryParams.get("room");
 
-  if (!token || !roomId) {
-    console.error("No Valid Token or Room ID Found");
-    ws.close();
-    return;
-  }
-  const userData = authUser(token);
+  if (!token || !roomId) return ws.close();
 
-  if (!userData) {
-    console.error("connection rejected of invalid user");
-    ws.close(1008, "user not authenticated!");
-    return;
-  }
+  const userData = authUser(token);
+  if (!userData) return ws.close(1008, "User not authenticated");
 
   const user: User = {
     userId: userData.userId,
@@ -104,13 +119,12 @@ wss.on("connection", (ws, req) => {
   ws.on("message", async (data) => {
     const parsedData: ClientMessage = JSON.parse(data.toString());
 
+    // ------------------- JOIN ROOM -------------------
     if (parsedData.type === "JOIN_ROOM") {
       const isRoomExist = await prisma.room.findUnique({
         where: { id: roomId },
       });
-
       if (!isRoomExist) {
-        console.error("No Room Id Found!");
         ws.send(
           JSON.stringify({ type: "ERROR", message: "Room does not exist" })
         );
@@ -118,22 +132,13 @@ wss.on("connection", (ws, req) => {
       }
 
       let room = rooms.find((r) => r.roomId === roomId);
-
       if (!room) {
-        room = {
-          roomId,
-          users: [],
-          admin: user.userId,
-          createdAt: Date.now(),
-        };
+        room = { roomId, users: [], admin: user.userId, createdAt: Date.now() };
         rooms.push(room);
-        console.log(`${user.userName} is the admin of new room ${roomId}`);
+        console.log(`${user.userName} is admin of new room ${roomId}`);
       }
 
-      const userAlreadyInRoom = room.users.some(
-        (u) => u.userId === user.userId
-      );
-      if (!userAlreadyInRoom) {
+      if (!room.users.some((u) => u.userId === user.userId)) {
         room.users.push(user);
         user.roomId = roomId;
       }
@@ -146,59 +151,44 @@ wss.on("connection", (ws, req) => {
         })
       );
 
-      const participants = getCurrentParticipantsInRoom(roomId);
+      // ------------------- LOAD EXISTING SHAPES -------------------
+      const existingShapes = await prisma.shape.findMany({ where: { roomId } });
+      ws.send(
+        JSON.stringify({
+          type: "LOAD_SHAPES",
+          shapes: existingShapes.map((s) => JSON.parse(s.message)),
+        })
+      );
 
       console.log(`${user.userName} joined room ${roomId}`);
-      console.log("Participants present in this room:", participants);
     }
 
+    // ------------------- LEAVE ROOM -------------------
     if (parsedData.type === "LEAVE_ROOM") {
-      const isRoomExist = await prisma.room.findUnique({
-        where: { id: roomId },
-      });
+      const room = rooms.find((r) => r.roomId === roomId);
+      if (!room) return; // runtime guard
 
-      if (!isRoomExist) {
-        console.error("No Room Id Found!");
-        ws.send(
-          JSON.stringify({ type: "ERROR", message: "Room does not exist" })
-        );
-        return;
-      }
-
-      let room = rooms.find((r) => r.roomId === roomId);
-      if (!room) {
-        console.error("No Room found for this roomId");
-        return;
-      }
-
-      room.users = room.users.filter((u) => u.userId !== user.userId);
+      room.users = room!.users.filter((u) => u.userId !== user.userId);
       user.roomId = null;
 
-      if (room.admin === user.userId) {
-        if (room.users.length > 0) {
-          const newAdmin = room.users[0];
-          if (newAdmin) {
-            room.admin = newAdmin.userId;
-            console.log(
-              `${newAdmin.userName} is now the admin of room ${roomId}`
-            );
-          }
-        } else {
-          rooms = rooms.filter((r) => r.roomId !== room.roomId);
-          console.log(`Room ${roomId} deleted because it is empty`);
-        }
+      if (room!.admin === user.userId && room!.users.length > 0) {
+        // @ts-ignore
+        room!.admin = room!.users[0].userId;
+      } else if (room!.users.length === 0) {
+        rooms = rooms.filter((r) => r.roomId !== room!.roomId);
+        console.log(`Room ${roomId} deleted (empty)`);
       }
 
       ws.send(
         JSON.stringify({
           type: "ROOM_LEAVED",
           roomId,
-          message: "Room Leaved Successfully",
+          message: "Room Left Successfully",
         })
       );
 
       const participants = getCurrentParticipantsInRoom(roomId);
-      room.users.forEach((u) => {
+      room.users.forEach((u) =>
         u.ws.send(
           JSON.stringify({
             type: "USER_LEFT",
@@ -206,19 +196,39 @@ wss.on("connection", (ws, req) => {
             userName: user.userName,
             participants,
           })
-        );
-      });
+        )
+      );
+
       console.log(`${user.userName} left room ${roomId}`);
-      console.log("Participants after leaving:", participants);
     }
+
+    // ------------------- CREATE SHAPE -------------------
+    if (parsedData.type === "CREATE_SHAPE") {
+      const { roomId, shape } = parsedData;
+
+      // Save in DB
+      await prisma.shape.create({
+        data: {
+          id: shape.id,
+          message: JSON.stringify(shape),
+          roomId,
+          userId: user.userId,
+        },
+      });
+
+      // Broadcast to all users in room
+      const room = rooms.find((r) => r.roomId === roomId);
+      if (!room) return;
+
+      room.users.forEach((u) =>
+        u.ws.send(JSON.stringify({ type: "NEW_SHAPE", shape }))
+      );
+    }
+  });
+
+  ws.on("close", () => {
+    // Optional: handle disconnect cleanup if needed
   });
 });
 
-function getCurrentParticipantsInRoom(roomId: string) {
-  const room = rooms.find((r) => r.roomId === roomId);
-  if (!room) return [];
-  return room.users.map((u) => ({
-    userId: u.userId,
-    userName: u.userName,
-  }));
-}
+console.log(`WebSocket server running on port ${PORT}`);

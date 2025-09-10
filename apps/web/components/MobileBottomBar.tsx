@@ -1,6 +1,7 @@
 import { Settings, Paintbrush } from "lucide-react";
 import { ZoomControl } from "@/components/canvas/ZoomControl";
 import { ShapeType } from "@/types/tools";
+import { useWsStore } from "@/hooks/useWsStore";
 
 interface MobileBottomBarProps {
   zoomIn: () => void;
@@ -23,6 +24,7 @@ export function MobileBottomBar({
   onOpenPropertiesPanel,
   selectedTool,
 }: MobileBottomBarProps) {
+  const isConnected = useWsStore((state) => state.isConnected);
   const toolsWithProperties: ShapeType[] = [
     "rectangle",
     "ellipse",
@@ -41,7 +43,9 @@ export function MobileBottomBar({
       {/* Settings button */}
       <button
         onClick={() => setShowSidebar(!showSidebar)}
-        className="flex items-center justify-center w-10 h-10 rounded-full bg-[#605ebc] text-white"
+        className={`flex items-center justify-center w-10 h-10 rounded-full ${
+          isConnected ? "bg-green-600" : "bg-[#605ebc]"
+        } text-white`}
       >
         <Settings className="w-5 h-5" />
       </button>

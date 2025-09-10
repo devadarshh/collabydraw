@@ -14,6 +14,7 @@ import {
   Settings2,
   ExternalLink,
   Trash2,
+  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -25,10 +26,10 @@ import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
 import { useRoomDialog } from "@/hooks/useRoomDialog";
 import { toast } from "sonner";
 import { useAuthStore } from "@/hooks/useAuthStore";
+import { useWsStore } from "@/hooks/useWsStore";
 
 interface InfoSidebarProps {
   className?: string;
-  isLoggedIn?: boolean;
 }
 
 const socialLinks = [
@@ -58,10 +59,30 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
   const { theme, setTheme } = useTheme();
   const { backgroundColor, clearCanvas, setBackgroundColor } = useCanvasStore();
   const { setOpen } = useRoomDialog();
+
+  const { ws, roomId, setWs, setRoomId, setIsConnected } = useWsStore();
+  const isConnected = useWsStore((state) => state.isConnected);
+
   const handleLogout = () => {
     logout();
     toast.success("Logged out successfully!");
   };
+
+  const handleCloseRoom = () => {
+    if (ws && roomId) {
+      ws.send(JSON.stringify({ type: "LEAVE_ROOM", roomId }));
+      ws.close();
+
+      setIsConnected(false);
+      setRoomId(null);
+      setWs(null);
+
+      toast.success("Room closed successfully!");
+    } else {
+      toast.error("No active room to close");
+    }
+  };
+
   const SectionTitle = ({ children }: { children: React.ReactNode }) => (
     <h3 className="text-xs font-semibold text-[#605ebc] uppercase tracking-wider mb-2">
       {children}
@@ -90,21 +111,32 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
           </p>
         </div>
 
+        {/* Auth buttons / user info */}
         <div className="flex flex-col gap-2 mb-4">
           {!isLoggedIn ? (
-            <Link href="/auth/signup" passHref>
-              <Button className="w-full">Create Account</Button>
-            </Link>
+            <div className="flex flex-col gap-2">
+              <Link href="/auth/signup" passHref>
+                <Button className="w-full">Create Account</Button>
+              </Link>
+              <Link href="/auth/signin" passHref>
+                <Button
+                  variant="outline"
+                  className="w-full border-[#605ebc] text-[#605ebc] hover:bg-[#8d8bd622]"
+                >
+                  Login
+                </Button>
+              </Link>
+            </div>
           ) : (
-            <div className="flex items-center justify-between border rounded-lg px-3 py-2">
-              <span className="text-sm font-medium text-[#605ebc]">
-                {user?.name}
-              </span>
+            <div className="flex flex-col border rounded-lg px-3 py-2 gap-2">
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold text-[#605ebc]">
+                  {user?.name}
+                </span>
+              </div>
               <Button
-                size="sm"
-                variant="ghost"
                 onClick={handleLogout}
-                className="text-red-500 hover:text-red-600"
+                className="w-full border border-[#605ebc] text-red-500 bg-transparent hover:bg-red-50 dark:hover:bg-red-900"
               >
                 Logout
               </Button>
@@ -112,6 +144,7 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
           )}
         </div>
 
+        {/* File ops */}
         <section>
           <SectionTitle>File Operations</SectionTitle>
           <div className="flex flex-col gap-2">
@@ -130,6 +163,7 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
           </div>
         </section>
 
+        {/* Background */}
         <section>
           <SectionTitle>Canvas Background</SectionTitle>
           <div className="flex gap-2 mb-2">
@@ -138,9 +172,9 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
                 key={color}
                 style={{ backgroundColor: color }}
                 className={cn(
-                  "w-6 h-6 rounded border transition-transform  duration-200 cursor-pointer hover:scale-105 hover:ring-2 hover:ring-[#605ebc] hover:ring-offset-1",
+                  "w-6 h-6 rounded border transition-transform duration-200 cursor-pointer hover:scale-105 hover:ring-2 hover:ring-[#605ebc] hover:ring-offset-1",
                   backgroundColor === color
-                    ? "ring-2 ring-[#605ebc] ring-offset-1" // stays after click
+                    ? "ring-2 ring-[#605ebc] ring-offset-1"
                     : "border-[#605ebc33]"
                 )}
                 onClick={() => setBackgroundColor(color)}
@@ -156,11 +190,12 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
             <Input
               className="text-xs flex-1 border border-[#605ebc33]"
               placeholder="#ffffff"
-              onBlur={(e) => setBackgroundColor(e.target.value)} // 🔥 updat
+              onBlur={(e) => setBackgroundColor(e.target.value)}
             />
           </div>
         </section>
 
+        {/* Sharing */}
         <section>
           <SectionTitle>Sharing</SectionTitle>
           <div className="flex flex-col gap-2">
@@ -170,6 +205,15 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
             >
               <Users className="w-4 h-4 text-[#605ebc]" /> Live Collaboration
             </button>
+            {isConnected && (
+              <button
+                onClick={handleCloseRoom}
+                className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-red-500 text-red-500 hover:bg-red-100 transition-all cursor-pointer"
+              >
+                <XCircle className="w-4 h-4 text-red-500" /> Close Room
+              </button>
+            )}
+
             <button
               onClick={() => clearCanvas()}
               className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-red-500 text-red-500 hover:bg-red-100 transition-all cursor-pointer"
@@ -179,6 +223,7 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
           </div>
         </section>
 
+        {/* Theme */}
         <section>
           <SectionTitle>Appearance</SectionTitle>
           <button
@@ -194,6 +239,7 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
           </button>
         </section>
 
+        {/* Social */}
         <section>
           <SectionTitle>Connect With Me</SectionTitle>
           <div className="flex flex-col gap-2">

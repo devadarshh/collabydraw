@@ -8,6 +8,7 @@ import { InfoSidebar } from "./InfoSidebar";
 import * as fabric from "fabric";
 import { ShapeType, tools } from "@/types/tools";
 import { MobileBottomBar } from "../MobileBottomBar";
+import { useWsStore } from "@/hooks/useWsStore";
 
 interface CanvasSidebarProps {
   showPropertiesPanel: boolean;
@@ -30,6 +31,7 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
   zoom,
   setZoom,
 }) => {
+  const isConnected = useWsStore((state) => state.isConnected);
   useEffect(() => {
     const toolsWithProperties = tools
       .map((t) => t.id)
@@ -88,9 +90,11 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
         <button
           onClick={() => setShowSidebar((prev) => !prev)}
           className={`flex items-center gap-2 px-3 py-1.5 text-sm border border-border rounded-md transition-colors ${
-            showSidebar
-              ? "bg-gradient-to-r from-[#605ebc] to-[#605ebc] text-white"
-              : "hover:bg-gradient-to-r hover:from-[#8d8bd6] hover:to-[#8d8bd6] hover:text-white"
+            isConnected
+              ? "bg-green-600 text-white" // ✅ connected
+              : showSidebar
+                ? "bg-gradient-to-r from-[#605ebc] to-[#605ebc] text-white"
+                : "hover:bg-gradient-to-r hover:from-[#8d8bd6] hover:to-[#8d8bd6] hover:text-white"
           }`}
         >
           {showSidebar ? (

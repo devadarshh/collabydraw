@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -21,7 +15,6 @@ model User {
   image     String?
   Room      Room[]
   Shape     Shape[]
-  chats  Chat[]   // relation to chat
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -32,7 +25,6 @@ model Room {
   adminId   String
   admin     User     @relation(fields: [adminId], references: [id])
   Shape     Shape[]
-  chats  Chat[]   // relation to messages
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -45,18 +37,6 @@ model Shape {
   user      User     @relation(fields: [userId], references: [id])
   roomId    String
   Room      Room     @relation(fields: [roomId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Chat {
-  id        String   @id @default(cuid())
-  text      String
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  roomId    String
-  room      Room     @relation(fields: [roomId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
