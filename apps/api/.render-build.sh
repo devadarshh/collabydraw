@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 
-# Install pnpm
+# Go to monorepo root
+cd ..
+
+# Install pnpm globally
 npm install -g pnpm
 
 # Install all dependencies in the workspace
 pnpm install --frozen-lockfile
 
-# Build TypeScript
+# Build the API
+cd apps/api
 pnpm run build
