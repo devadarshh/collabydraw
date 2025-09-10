@@ -24,6 +24,7 @@ import { useTheme } from "next-themes";
 import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
 import { useRoomDialog } from "@/hooks/useRoomDialog";
 import { toast } from "sonner";
+import { useAuthStore } from "@/hooks/useAuthStore";
 
 interface InfoSidebarProps {
   className?: string;
@@ -51,15 +52,16 @@ const socialLinks = [
   },
 ];
 
-export function InfoSidebar({
-  className,
-  isLoggedIn = false,
-}: InfoSidebarProps) {
+export function InfoSidebar({ className }: InfoSidebarProps) {
+  const { user, isLoggedIn, logout } = useAuthStore();
   const colorOptions = ["#ffffff", "#f0f0f0", "#121212", "#fef3c7", "#d1fae5"];
   const { theme, setTheme } = useTheme();
   const { backgroundColor, clearCanvas, setBackgroundColor } = useCanvasStore();
   const { setOpen } = useRoomDialog();
-
+  const handleLogout = () => {
+    logout();
+    toast.success("Logged out successfully!");
+  };
   const SectionTitle = ({ children }: { children: React.ReactNode }) => (
     <h3 className="text-xs font-semibold text-[#605ebc] uppercase tracking-wider mb-2">
       {children}
@@ -89,23 +91,24 @@ export function InfoSidebar({
         </div>
 
         <div className="flex flex-col gap-2 mb-4">
-          {!isLoggedIn && (
+          {!isLoggedIn ? (
             <Link href="/auth/signup" passHref>
+              <Button className="w-full">Create Account</Button>
+            </Link>
+          ) : (
+            <div className="flex items-center justify-between border rounded-lg px-3 py-2">
+              <span className="text-sm font-medium text-[#605ebc]">
+                {user?.name}
+              </span>
               <Button
                 size="sm"
-                className="border border-[#605ebc33] hover:bg-[#8d8bd622] cursor-pointer"
+                variant="ghost"
+                onClick={handleLogout}
+                className="text-red-500 hover:text-red-600"
               >
-                Create Account
+                Logout
               </Button>
-            </Link>
-          )}
-          {isLoggedIn && (
-            <Button
-              size="sm"
-              className="border border-[#605ebc33] hover:bg-[#8d8bd622] cursor-pointer"
-            >
-              Logout
-            </Button>
+            </div>
           )}
         </div>
 
