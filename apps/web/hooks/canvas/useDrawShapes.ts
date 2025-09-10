@@ -4,6 +4,7 @@ import { useEffect, Dispatch, SetStateAction } from "react";
 import * as fabric from "fabric";
 import { ShapeType } from "@/types/tools";
 import { useCanvasProperties } from "./useCanvasProperties";
+import { useWsStore } from "../useWsStore";
 
 interface UseDrawShapesProps {
   canvas: fabric.Canvas | null;
@@ -31,27 +32,23 @@ export function useDrawShapes({
     fontSize,
     textAlign,
     strokeStyle,
-    textColor, // ✅ new
+    textColor,
   } = useCanvasProperties();
+  const { ws, isConnected, roomId } = useWsStore();
 
   useEffect(() => {
     if (!canvas) return;
 
-    if (mode === "freeDraw") {
-      canvas.isDrawingMode = true;
-
-      if (canvas.freeDrawingBrush) {
-        canvas.freeDrawingBrush.color = strokeColor;
-        canvas.freeDrawingBrush.width = strokeWidth;
-      }
-    } else {
-      canvas.isDrawingMode = false;
+    // Enable free drawing
+    canvas.isDrawingMode = mode === "freeDraw";
+    if (canvas.freeDrawingBrush && mode === "freeDraw") {
+      canvas.freeDrawingBrush.color = strokeColor;
+      canvas.freeDrawingBrush.width = strokeWidth;
     }
   }, [canvas, mode, strokeColor, strokeWidth, opacity]);
 
   useEffect(() => {
     if (!canvas) return;
-
     const active = canvas.getActiveObject();
     if (!active) return;
 
@@ -94,6 +91,7 @@ export function useDrawShapes({
     canvas.renderAll();
   }, [canvas, mode]);
 
+  // Drawing shapes
   useEffect(() => {
     if (!canvas) return;
 
@@ -111,7 +109,6 @@ export function useDrawShapes({
       }
 
       if (mode !== "draw" || !drawingShape) return;
-
       startPoint.current = { x: pointer.x, y: pointer.y };
 
       let shape: fabric.Object | null = null;
@@ -198,7 +195,7 @@ export function useDrawShapes({
             top: pointer.y,
             fontFamily,
             fontSize,
-            fill: textColor, // ✅ store color
+            fill: textColor,
             textAlign,
             opacity: opacity / 100,
             editable: true,
@@ -207,25 +204,13 @@ export function useDrawShapes({
             backgroundColor: "rgba(0,0,0,0.05)",
             padding: 5,
           });
-
           canvas.add(text);
           canvas.setActiveObject(text);
-
-          text.set({
-            fill: textColor,
-            fontFamily,
-            fontSize,
-            textAlign,
-            opacity: opacity / 100,
-          });
-
           text.enterEditing();
           text.hiddenTextarea?.focus();
-
           startPoint.current = null;
           setTempShape(null);
           break;
-
         case "diamond":
           shape = new fabric.Polygon(
             [
@@ -259,7 +244,6 @@ export function useDrawShapes({
 
     const handleMouseMove = (opt: fabric.TEvent<fabric.TPointerEvent>) => {
       if (mode !== "draw" || !drawingShape || !startPoint.current) return;
-
       const pointer = canvas.getPointer(opt.e as MouseEvent);
       const { x, y } = startPoint.current;
 
@@ -271,7 +255,6 @@ export function useDrawShapes({
           top: Math.min(pointer.y, y),
         });
       }
-
       if (drawingShape === "ellipse" && tempShape instanceof fabric.Ellipse) {
         tempShape.set({
           rx: Math.abs(pointer.x - x) / 2,
@@ -280,11 +263,9 @@ export function useDrawShapes({
           top: (pointer.y + y) / 2,
         });
       }
-
       if (drawingShape === "line" && tempShape instanceof fabric.Line) {
         tempShape.set({ x2: pointer.x, y2: pointer.y });
       }
-
       if (drawingShape === "arrow" && arrowLine && arrowHead) {
         arrowLine.set({ x2: pointer.x, y2: pointer.y });
         arrowHead.set({
@@ -297,7 +278,6 @@ export function useDrawShapes({
             90,
         });
       }
-
       if (drawingShape === "diamond" && tempShape instanceof fabric.Polygon) {
         tempShape.set({
           width: Math.abs(pointer.x - x),
@@ -316,7 +296,7 @@ export function useDrawShapes({
       if (drawingShape === "arrow" && arrowLine && arrowHead) {
         const arrowGroup = new fabric.Group([arrowLine, arrowHead], {
           selectable: false,
-          evented: false,
+          evented: true,
         }) as fabric.Group & { line: fabric.Line; head: fabric.Triangle };
         arrowGroup.line = arrowLine;
         arrowGroup.head = arrowHead;
@@ -329,10 +309,25 @@ export function useDrawShapes({
         arrowHead = null;
         startPoint.current = null;
       } else if (tempShape) {
-        // Only selectable in "select" mode
         tempShape.set({ selectable: false, evented: true });
         tempShape.setCoords();
         canvas.renderAll();
+        if (ws && isConnected && roomId) {
+          const shapeData = {
+            id: crypto.randomUUID(),
+            type: drawingShape,
+            x: tempShape.left,
+            y: tempShape.top,
+            width: tempShape.width ?? 0,
+            height: tempShape.height ?? 0,
+            color: tempShape.fill ?? tempShape.stroke,
+            strokeWidth: tempShape.strokeWidth,
+            points: (tempShape as any).points ?? undefined,
+          };
+          ws.send(
+            JSON.stringify({ type: "CREATE_SHAPE", roomId, shape: shapeData })
+          );
+        }
         setTempShape(null);
         startPoint.current = null;
       }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { Button } from "./ui/button";
 import { Play, XCircle } from "lucide-react";
@@ -15,94 +15,116 @@ import { useRoomDialog } from "@/hooks/useRoomDialog";
 import { useAuthStore } from "@/hooks/useAuthStore";
 import { useWsStore } from "@/hooks/useWsStore";
 import { toast } from "sonner";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function CreateRoomDialog() {
   const { open, setOpen } = useRoomDialog();
   const { isLoggedIn, user, token } = useAuthStore();
-
   const { ws, isConnected, setIsConnected, setWs, setRoomId } = useWsStore();
-
   const [roomId, setLocalRoomId] = useState<string>("");
 
-  const handleStartSession = async () => {
-    if (!isLoggedIn) {
-      toast.error("Please login first!");
-      return;
-    }
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const roomFromUrl = searchParams.get("room");
 
+  // Auto-join if URL has ?room=
+  useEffect(() => {
+    if (roomFromUrl && isLoggedIn && token && !isConnected) {
+      joinRoom(roomFromUrl);
+    } else if (roomFromUrl && !isLoggedIn) {
+      toast.error("You must be logged in to join this room");
+    }
+  }, [roomFromUrl, isLoggedIn, token]);
+
+  const joinRoom = async (newRoomId: string) => {
+    setLocalRoomId(newRoomId);
+
+    const websocket = new WebSocket(
+      `ws://localhost:8080?token=${token}&room=${newRoomId}`
+    );
+
+    websocket.onopen = () => {
+      websocket.send(JSON.stringify({ type: "JOIN_ROOM", roomId: newRoomId }));
+      setIsConnected(true);
+      setWs(websocket);
+      setRoomId(newRoomId);
+      router.replace(`/?room=${newRoomId}`); // update URL
+      toast.success(`Joined room ${newRoomId}`);
+    };
+
+    websocket.onmessage = (event) => {
+      let msg;
+      try {
+        msg = JSON.parse(event.data);
+      } catch {
+        console.log("Message from server (non-JSON):", event.data);
+        return;
+      }
+
+      console.log("Message from server:", msg);
+
+      // Handle messages
+      if (msg.type === "USER_LEFT") {
+        toast.info(`${msg.userName} left the room`);
+      }
+      if (msg.type === "ROOM_JOINED") {
+        toast.success(msg.message);
+      }
+      if (msg.type === "LOAD_SHAPES") {
+        // load existing shapes on canvas
+        console.log("Existing shapes:", msg.shapes);
+        // here: renderShapesOnCanvas(msg.shapes);
+      }
+      if (msg.type === "NEW_SHAPE") {
+        // render new shape on canvas
+        // renderShapeOnCanvas(msg.shape);
+      }
+    };
+
+    websocket.onclose = () => {
+      setIsConnected(false);
+      setWs(null);
+      setRoomId(null);
+      setLocalRoomId("");
+      toast.info("Disconnected from room");
+    };
+
+    websocket.onerror = () => {
+      setIsConnected(false);
+      setWs(null);
+      setRoomId(null);
+      setLocalRoomId("");
+      toast.error("WebSocket connection failed");
+    };
+
+    setWs(websocket);
+  };
+
+  const handleStartSession = async () => {
+    if (!isLoggedIn) return toast.error("Please login first!");
     if (!token) return toast.error("No JWT token found");
 
     try {
-      // 1️⃣ Create room via backend API using Axios
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/create-room`,
         {},
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
 
       const data = res.data;
+      if (!data.success) return toast.error("Failed to create room");
 
-      if (!data.success) {
-        toast.error("Failed to create room");
-        return;
-      }
-
-      const newRoomId = data.data.id;
-      setLocalRoomId(newRoomId);
-
-      // 2️⃣ Connect to WebSocket with the created room
-      const websocket = new WebSocket(
-        `ws://localhost:8080?token=${token}&room=${newRoomId}`
-      );
-
-      websocket.onopen = () => {
-        console.log("Connected to WebSocket server as", user?.name);
-        websocket.send(
-          JSON.stringify({ type: "JOIN_ROOM", roomId: newRoomId })
-        );
-        setIsConnected(true);
-        setWs(websocket);
-        setRoomId(newRoomId);
-        toast.success("Connected to session!");
-      };
-
-      websocket.onclose = () => {
-        setIsConnected(false);
-        setWs(null);
-        setRoomId(null);
-        setLocalRoomId("");
-      };
-
-      websocket.onerror = () => {
-        setIsConnected(false);
-        setWs(null);
-        setRoomId(null);
-        setLocalRoomId("");
-        toast.error("WebSocket connection failed!");
-      };
-
-      websocket.onmessage = (event) =>
-        console.log("Message from server:", event.data);
-
-      setWs(websocket);
+      joinRoom(data.data.id);
     } catch (err: any) {
-      console.error(err);
-      toast.error(
-        err.response?.data?.message ||
-          "Something went wrong while starting session"
-      );
+      toast.error(err.response?.data?.message || "Failed to start session");
     }
   };
 
   const handleShareRoom = () => {
     if (!roomId) return toast.error("Start a session first!");
-    const shareUrl = `${window.location.origin}/?room=${roomId}`;
-    navigator.clipboard.writeText(shareUrl);
+    navigator.clipboard.writeText(window.location.href);
     toast.success("Room URL copied to clipboard!");
   };
 
@@ -114,7 +136,8 @@ export default function CreateRoomDialog() {
       setWs(null);
       setRoomId(null);
       setLocalRoomId("");
-      toast.success("Room closed successfully!");
+      router.replace(`/`);
+      toast.success("Left the room successfully!");
     }
   };
 
@@ -127,8 +150,7 @@ export default function CreateRoomDialog() {
             Live Collaboration
           </DialogTitle>
           <p className="text-center text-sm sm:text-base leading-relaxed text-gray-600 dark:text-gray-300">
-            Invite people to collaborate on your drawing in real-time. This
-            session is{" "}
+            Invite people to collaborate in real-time. Session is{" "}
             <span className="font-semibold text-color-primary">
               end-to-end encrypted
             </span>
@@ -139,40 +161,29 @@ export default function CreateRoomDialog() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           {!isConnected ? (
             <Button
-              type="button"
-              size="lg"
-              className="w-full sm:w-auto py-3 px-6 rounded-lg text-sm font-semibold text-white shadow-md transition-transform active:scale-[.98]"
-              style={{
-                background:
-                  "linear-gradient(to right, #8d8bd6 0%, #8d8bd6 100%)",
-              }}
               onClick={handleStartSession}
+              size="lg"
+              className="w-full sm:w-auto py-3 px-6 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700"
             >
-              <div className="flex items-center gap-2">
-                <Play className="w-5 h-5 text-white" />
-                Start Session
-              </div>
+              <Play className="w-5 h-5 mr-2" />
+              Start Session
             </Button>
           ) : (
             <>
-              {roomId && (
-                <Button
-                  type="button"
-                  size="lg"
-                  className="w-full sm:w-auto py-3 px-6 rounded-lg text-sm font-semibold text-white shadow-md bg-green-600 hover:bg-green-700"
-                  onClick={handleShareRoom}
-                >
-                  Share Room
-                </Button>
-              )}
               <Button
-                type="button"
+                onClick={handleShareRoom}
                 size="lg"
-                className="w-full sm:w-auto py-3 px-6 rounded-lg text-sm font-semibold text-white shadow-md bg-red-600 hover:bg-red-700 flex items-center justify-center gap-2"
-                onClick={handleCloseSession}
+                className="w-full sm:w-auto py-3 px-6 rounded-lg text-sm font-semibold text-white bg-green-600 hover:bg-green-700"
               >
-                <XCircle className="w-5 h-5 text-white" />
-                Close Session
+                Share Room
+              </Button>
+              <Button
+                onClick={handleCloseSession}
+                size="lg"
+                className="w-full sm:w-auto py-3 px-6 rounded-lg text-sm font-semibold text-white bg-red-600 hover:bg-red-700 flex items-center gap-2"
+              >
+                <XCircle className="w-5 h-5" />
+                Leave Room
               </Button>
             </>
           )}

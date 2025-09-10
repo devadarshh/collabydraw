@@ -11,15 +11,28 @@ export function protectedRoute(
   next: NextFunction
 ) {
   try {
-    const token = req.query.token as string;
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Token is missing" });
+    }
+
+    const token = authHeader.split(" ")[1]; // token is now string | undefined
+
     if (!token) {
       return res.status(401).json({ message: "Token is missing" });
     }
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY!) as {
+
+    // ⚡ Cast to unknown first to satisfy TypeScript
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET_KEY!
+    ) as unknown as {
       id: string;
       email: string;
       name: string;
     };
+
     req.user = { id: decoded.id, email: decoded.email, name: decoded.name };
     next();
   } catch (err) {

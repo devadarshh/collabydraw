@@ -3,103 +3,55 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import { useTheme } from "next-themes";
-import { Eraser } from "lucide-react";
 import ReactDOMServer from "react-dom/server";
+import { Eraser } from "lucide-react";
+
 import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
+import { useAuthStore } from "@/hooks/useAuthStore";
 
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { ShapeType } from "@/types/tools";
-import { useShortcutKeys } from "@/hooks/canvas/useKeyboardShortcuts";
-import { useCanvasTheme } from "@/hooks/canvas/UseCanvasTheme";
-import { useDrawShapes } from "@/hooks/canvas/useDrawShapes";
-import { useHandleAddShapes } from "@/hooks/canvas/useHandleAddShapes";
-import { useGrabMode } from "@/hooks/canvas/useGrabMode";
+
 import { Toolbar } from "./ToolBar";
 import { CanvasSidebar } from "./CanvasSideBar";
+
+import { useDrawShapes } from "@/hooks/canvas/useDrawShapes";
 import { useCanvasZoom } from "@/hooks/canvas/useCanvasZoom";
+import { useCanvasTheme } from "@/hooks/canvas/UseCanvasTheme";
+import { useShortcutKeys } from "@/hooks/canvas/useKeyboardShortcuts";
+import { useHandleAddShapes } from "@/hooks/canvas/useHandleAddShapes";
+import { useGrabMode } from "@/hooks/canvas/useGrabMode";
+import { useWebSocketShapes } from "@/hooks/useWebSocketShapes";
+import { useWsStore } from "@/hooks/useWsStore";
+import { useSearchParams } from "next/navigation";
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-
   const { canvas, setCanvas } = useCanvasStore();
-  const [zoom, setZoom] = useState<number>(100);
+  const { user } = useAuthStore();
+  const [zoom, setZoom] = useState(100);
+  const { ws, isConnected } = useWsStore();
 
   const [mode, setMode] = useState<
     "select" | "draw" | "eraser" | "freeDraw" | "grab" | null
   >("select");
   const [activeTool, setActiveTool] = useState<ShapeType>("select");
-  const [drawingShape, setDrawingShape] = useState<ShapeType | null>(null);
+  const [drawingShape, setDrawingShape] = useState<ShapeType | null>("select");
   const [tempShape, setTempShape] = useState<fabric.Object | null>(null);
+  const startPoint = useRef<{ x: number; y: number } | null>(null);
 
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [selectedTool, setSelectedTool] = useState<ShapeType>("select");
 
-  const startPoint = useRef<{ x: number; y: number } | null>(null);
   const { theme } = useTheme();
-
   const themeColors: Record<"light" | "dark", string> = {
     light: "#ffffff",
     dark: "#121212",
   };
-
   const getCanvasBg = () =>
     theme === "dark" ? themeColors.dark : themeColors.light;
 
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const parent = canvasRef.current.parentElement!;
-    const initCanvas = new fabric.Canvas(canvasRef.current, {
-      width: parent.clientWidth,
-      height: parent.clientHeight,
-      selection: true,
-      backgroundColor: getCanvasBg(),
-    });
-    applyFabricConfig(initCanvas);
-    setCanvas(initCanvas);
-    function saveCanvasToLocal() {
-      if (!initCanvas) return;
-      const json = initCanvas.toJSON();
-      localStorage.setItem("fabric-canvas", JSON.stringify(json));
-    }
-    const saved = localStorage.getItem("fabric-canvas");
-    if (saved) {
-      initCanvas.loadFromJSON(saved, () => {
-        setTimeout(() => {
-          initCanvas.renderAll();
-        }, 0);
-
-        initCanvas.getObjects().forEach((obj) => {
-          obj.selectable = true;
-          obj.evented = true;
-        });
-      });
-    }
-    initCanvas.on("object:added", saveCanvasToLocal);
-    initCanvas.on("object:modified", saveCanvasToLocal);
-    initCanvas.on("object:removed", saveCanvasToLocal);
-    const handleResize = () => {
-      initCanvas.setWidth(parent.clientWidth);
-      initCanvas.setHeight(parent.clientHeight);
-      initCanvas.renderAll();
-    };
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      initCanvas.dispose();
-    };
-  }, []);
-
-  useGrabMode({ canvas, mode });
-  useDrawShapes({
-    canvas,
-    mode,
-    drawingShape,
-    tempShape,
-    setTempShape,
-    startPoint,
-  });
-  useCanvasZoom(canvas, setZoom);
   const handleAddShapes = useHandleAddShapes({
     canvas,
     setMode,
@@ -112,6 +64,7 @@ const CanvasBoard = () => {
     setActiveTool(tool);
     setSelectedTool(tool);
 
+    // set mode & properties panel
     if (
       [
         "rectangle",
@@ -127,66 +80,17 @@ const CanvasBoard = () => {
       setMode("draw");
       setShowPropertiesPanel(true);
       canvas?.getObjects().forEach((obj) => {
-        obj.selectable = false; // cannot move/resize
-        obj.evented = true; // stays interactive (visible + hover events work)
+        obj.selectable = false;
+        obj.evented = true;
         obj.hoverCursor = "default";
       });
       canvas?.renderAll();
     } else if (tool === "eraser") {
       setMode("eraser");
       setShowPropertiesPanel(false);
-
-      if (canvas) {
-        // Make all objects unselectable
-        canvas.getObjects().forEach((obj) => {
-          obj.selectable = false;
-          obj.evented = true;
-        });
-
-        // Determine eraser color based on theme
-        const eraserColor = theme === "dark" ? "#ffffff" : "#000000";
-
-        // Render the eraser SVG with dynamic color
-        const eraserSvg = ReactDOMServer.renderToStaticMarkup(
-          <Eraser color={eraserColor} size={24} />
-        );
-        const eraserCursor = `url("data:image/svg+xml;utf8,${encodeURIComponent(
-          eraserSvg
-        )}") 12 12, auto`;
-
-        // Apply cursor to canvas
-        const canvasEl = canvas.getElement();
-        canvas.defaultCursor = eraserCursor;
-        canvas.hoverCursor = eraserCursor;
-        canvasEl.style.cursor = eraserCursor;
-        canvas.renderAll();
-
-        // Persist cursor on mouse events to prevent flicker
-        const updateCursor = () => {
-          canvasEl.style.cursor = eraserCursor;
-        };
-        canvas.on("mouse:over", updateCursor);
-        canvas.on("mouse:out", updateCursor);
-        canvas.on("mouse:down", updateCursor);
-        canvas.on("mouse:up", updateCursor);
-
-        // Cleanup function when switching tools
-        const removeCursorEvents = () => {
-          canvas.off("mouse:over", updateCursor);
-          canvas.off("mouse:out", updateCursor);
-          canvas.off("mouse:down", updateCursor);
-          canvas.off("mouse:up", updateCursor);
-        };
-        (canvas as any)._eraserCleanup = removeCursorEvents;
-      }
     } else if (tool === "grab") {
       setMode("grab");
       setShowPropertiesPanel(false);
-      canvas?.getObjects().forEach((obj) => {
-        obj.selectable = false;
-        obj.evented = false;
-      });
-      canvas?.renderAll();
     } else if (tool === "select") {
       setMode("select");
       setShowPropertiesPanel(false);
@@ -202,6 +106,66 @@ const CanvasBoard = () => {
 
   useShortcutKeys({ handleAddShapes: handleShapeSelect });
   useCanvasTheme({ canvas });
+
+  // Initialize Canvas
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const parent = canvasRef.current.parentElement!;
+    const initCanvas = new fabric.Canvas(canvasRef.current, {
+      width: parent.clientWidth,
+      height: parent.clientHeight,
+      selection: true,
+      backgroundColor: getCanvasBg(),
+    });
+    applyFabricConfig(initCanvas);
+    setCanvas(initCanvas);
+
+    const saved = localStorage.getItem("fabric-canvas");
+    if (saved) {
+      initCanvas.loadFromJSON(saved, () => {
+        setTimeout(() => initCanvas.renderAll(), 0);
+      });
+    }
+
+    const saveCanvasToLocal = () =>
+      localStorage.setItem(
+        "fabric-canvas",
+        JSON.stringify(initCanvas.toJSON())
+      );
+    initCanvas.on("object:added", saveCanvasToLocal);
+    initCanvas.on("object:modified", saveCanvasToLocal);
+    initCanvas.on("object:removed", saveCanvasToLocal);
+
+    const handleResize = () => {
+      initCanvas.setWidth(parent.clientWidth);
+      initCanvas.setHeight(parent.clientHeight);
+      initCanvas.renderAll();
+    };
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      initCanvas.dispose();
+    };
+  }, []);
+
+  // Enable hooks
+  useGrabMode({ canvas, mode });
+  useDrawShapes({
+    canvas,
+    mode,
+    drawingShape,
+    tempShape,
+    setTempShape,
+    startPoint,
+  });
+  useCanvasZoom(canvas, setZoom);
+
+  // Real-time collaboration
+  const roomId = useSearchParams()?.get("room") ?? "room-123";
+  //@ts-ignore
+  const token = user?.token ?? "";
+  useWebSocketShapes(roomId, token);
 
   return (
     <div className="relative w-full h-full">

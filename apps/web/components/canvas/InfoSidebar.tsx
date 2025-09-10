@@ -205,14 +205,6 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
             >
               <Users className="w-4 h-4 text-[#605ebc]" /> Live Collaboration
             </button>
-            {isConnected && (
-              <button
-                onClick={handleCloseRoom}
-                className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-red-500 text-red-500 hover:bg-red-100 transition-all cursor-pointer"
-              >
-                <XCircle className="w-4 h-4 text-red-500" /> Close Room
-              </button>
-            )}
 
             <button
               onClick={() => clearCanvas()}
