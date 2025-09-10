@@ -38,7 +38,8 @@ type Room = {
 type ClientMessage =
   | { type: "JOIN_ROOM"; roomId: string }
   | { type: "LEAVE_ROOM"; roomId: string }
-  | { type: "CREATE_SHAPE"; roomId: string; shape: ShapeData };
+  | { type: "CREATE_SHAPE"; roomId: string; shape: ShapeData }
+  | { type: "DELETE_SHAPE"; roomId: string; shapeId: string };
 
 type ServerMessage =
   | { type: "ROOM_JOINED"; roomId: string; message: string }
@@ -222,6 +223,19 @@ wss.on("connection", (ws, req) => {
 
       room.users.forEach((u) =>
         u.ws.send(JSON.stringify({ type: "NEW_SHAPE", shape }))
+      );
+    } // DELETE_SHAPE
+    if (parsedData.type === "DELETE_SHAPE") {
+      const { roomId, shapeId } = parsedData;
+      // Remove from DB
+      await prisma.shape.delete({ where: { id: shapeId } });
+
+      const room = rooms.find((r) => r.roomId === roomId);
+      if (!room) return;
+
+      // Broadcast delete to all users
+      room.users.forEach((u) =>
+        u.ws.send(JSON.stringify({ type: "DELETE_SHAPE", shapeId }))
       );
     }
   });

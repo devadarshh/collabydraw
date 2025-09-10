@@ -118,9 +118,23 @@ export function useDrawShapes({
 
       if (mode === "eraser") {
         const target = canvas.findTarget(opt.e as MouseEvent);
-        if (target) canvas.remove(target);
-        // TODO: send DELETE_SHAPE
-        return;
+        if (target) {
+          canvas.remove(target);
+
+          // Broadcast deletion to others
+          // @ts-ignore
+          if (ws && isConnected && roomId && target.id) {
+            ws.send(
+              JSON.stringify({
+                type: "DELETE_SHAPE",
+                roomId,
+                // @ts-ignore
+                shapeId: target.id,
+              })
+            );
+          }
+        }
+        return; // stop further drawing logic
       }
 
       if (mode !== "draw" || !drawingShape) return;
@@ -294,8 +308,8 @@ export function useDrawShapes({
           id: crypto.randomUUID(),
           selectable: false,
           evented: true,
-        } as //@ts-ignore
-        fabric.IGroupOptions & { id: string });
+          //@ts-ignore
+        } as fabric.IGroupOptions & { id: string });
         canvas.remove(arrowLine, arrowHead);
         canvas.add(arrowGroup);
         sendShapeToServer(arrowGroup);
