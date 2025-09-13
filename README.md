@@ -67,6 +67,8 @@ pnpm install
 # Run both frontend & backend with Turborepo
 pnpm dev
 
+```
+
 --
 
 ## 📸 Screenshots
@@ -99,4 +101,7 @@ pnpm dev
 
 This project is licensed under a **Custom Personal Use License** — you may view and learn from the code, but **commercial use, redistribution, or claiming authorship is strictly prohibited**.
 See the full [LICENSE](./LICENSE) for details.
+
+```
+
 ```
