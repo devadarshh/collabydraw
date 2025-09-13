@@ -1,14 +1,13 @@
 import { create } from "zustand";
 import * as fabric from "fabric";
 import { toast } from "sonner";
-import { useTheme } from "next-themes";
 
 interface CanvasState {
   canvas: fabric.Canvas | null;
   setCanvas: (canvas: fabric.Canvas) => void;
   clearCanvas: () => void;
   backgroundColor: string;
-  setBackgroundColor: (color: string) => void; // 🔥 new
+  setBackgroundColor: (color: string) => void;
 }
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
@@ -20,7 +19,6 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     const canvas = get().canvas;
     if (!canvas) return;
 
-    // get theme from <html data-theme> (set by next-themes)
     const isDark =
       typeof window !== "undefined" &&
       document.documentElement.classList.contains("dark");

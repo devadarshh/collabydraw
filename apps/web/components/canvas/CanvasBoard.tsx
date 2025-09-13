@@ -5,7 +5,6 @@ import * as fabric from "fabric";
 import { useTheme } from "next-themes";
 
 import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
-import { useAuthStore } from "@/hooks/useAuthStore";
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { ShapeType } from "@/types/tools";
 
@@ -18,13 +17,13 @@ import { useCanvasTheme } from "@/hooks/canvas/UseCanvasTheme";
 import { useShortcutKeys } from "@/hooks/canvas/useKeyboardShortcuts";
 import { useHandleAddShapes } from "@/hooks/canvas/useHandleAddShapes";
 import { useGrabMode } from "@/hooks/canvas/useGrabMode";
-// Import the new centralized hook
 import { useWebSocketManager } from "@/hooks/useWebSocketManager";
+import throttle from "lodash/throttle";
+import { debounce } from "lodash";
 
 const CanvasBoard = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { canvas, setCanvas } = useCanvasStore();
-  const { user } = useAuthStore();
   const [zoom, setZoom] = useState(100);
 
   const [mode, setMode] = useState<
@@ -38,14 +37,56 @@ const CanvasBoard = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [selectedTool, setSelectedTool] = useState<ShapeType>("select");
+  const { resolvedTheme } = useTheme();
 
-  const { theme } = useTheme();
-  const themeColors: Record<"light" | "dark", string> = {
-    light: "#ffffff",
-    dark: "#121212",
-  };
-  const getCanvasBg = () =>
-    theme === "dark" ? themeColors.dark : themeColors.light;
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const parent = canvasRef.current.parentElement!;
+    const initCanvas = new fabric.Canvas(canvasRef.current, {
+      width: parent.clientWidth,
+      height: parent.clientHeight,
+      selection: true,
+      backgroundColor: resolvedTheme === "dark" ? "#121212" : "#ffffff",
+    });
+    applyFabricConfig(initCanvas);
+    setCanvas(initCanvas);
+
+    const saved = localStorage.getItem("fabric-canvas");
+    if (saved) {
+      initCanvas.loadFromJSON(saved, () => {
+        // to avoiddd race contiton
+        setTimeout(() => initCanvas.renderAll(), 0);
+      });
+    }
+
+    const saveCanvasToLocal = throttle(() => {
+      localStorage.setItem(
+        "fabric-canvas",
+        JSON.stringify(initCanvas.toJSON())
+      );
+    }, 500);
+    initCanvas.on("object:added", saveCanvasToLocal);
+    initCanvas.on("object:modified", saveCanvasToLocal);
+    initCanvas.on("object:removed", saveCanvasToLocal);
+
+    const handleResize = debounce(() => {
+      initCanvas.setWidth(parent.clientWidth);
+      initCanvas.setHeight(parent.clientHeight);
+      initCanvas.renderAll();
+    }, 200);
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      initCanvas.off("object:added", saveCanvasToLocal);
+      initCanvas.off("object:modified", saveCanvasToLocal);
+      initCanvas.off("object:removed", saveCanvasToLocal);
+      window.removeEventListener("resize", handleResize);
+      saveCanvasToLocal.cancel();
+      handleResize.cancel();
+      initCanvas.dispose();
+    };
+  }, []);
 
   const handleAddShapes = useHandleAddShapes({
     canvas,
@@ -55,7 +96,6 @@ const CanvasBoard = () => {
   });
 
   const handleShapeSelect = (tool: ShapeType) => {
-    // This function's logic remains the same
     setDrawingShape(tool);
     setActiveTool(tool);
     setSelectedTool(tool);
@@ -102,51 +142,8 @@ const CanvasBoard = () => {
   useShortcutKeys({ handleAddShapes: handleShapeSelect });
   useCanvasTheme({ canvas });
 
-  // Initialize Canvas
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    const parent = canvasRef.current.parentElement!;
-    const initCanvas = new fabric.Canvas(canvasRef.current, {
-      width: parent.clientWidth,
-      height: parent.clientHeight,
-      selection: true,
-      backgroundColor: getCanvasBg(),
-    });
-    applyFabricConfig(initCanvas);
-    setCanvas(initCanvas);
-
-    // Local storage logic remains the same
-    const saved = localStorage.getItem("fabric-canvas");
-    if (saved) {
-      initCanvas.loadFromJSON(saved, () => {
-        setTimeout(() => initCanvas.renderAll(), 0);
-      });
-    }
-
-    const saveCanvasToLocal = () =>
-      localStorage.setItem(
-        "fabric-canvas",
-        JSON.stringify(initCanvas.toJSON())
-      );
-    initCanvas.on("object:added", saveCanvasToLocal);
-    initCanvas.on("object:modified", saveCanvasToLocal);
-    initCanvas.on("object:removed", saveCanvasToLocal);
-
-    const handleResize = () => {
-      initCanvas.setWidth(parent.clientWidth);
-      initCanvas.setHeight(parent.clientHeight);
-      initCanvas.renderAll();
-    };
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      initCanvas.dispose();
-    };
-  }, []);
-
-  // Enable hooks
   useGrabMode({ canvas, mode });
+
   useDrawShapes({
     canvas,
     mode,
@@ -157,12 +154,10 @@ const CanvasBoard = () => {
   });
   useCanvasZoom(canvas, setZoom);
 
-  // Real-time collaboration - USE THE NEW HOOK
   useWebSocketManager();
 
   return (
     <div className="relative w-full h-full">
-      {/* ... JSX remains the same ... */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] sm:w-auto max-w-lg flex justify-center px-2 sm:px-0">
         <Toolbar activeTool={activeTool} onToolChange={handleShapeSelect} />
       </div>

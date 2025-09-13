@@ -1,7 +1,10 @@
 "use client";
+
 import CanvasBoard from "@/components/canvas/CanvasBoard";
 import { useFirstVisit } from "@/hooks/useFirstVisit";
 import dynamic from "next/dynamic";
+
+
 const WelcomeOverlay = dynamic(
   () =>
     import("@/components/canvas/WelcomeOverlay").then(

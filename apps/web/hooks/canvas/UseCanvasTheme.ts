@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect } from "react";
 import * as fabric from "fabric";
 import { useTheme } from "next-themes";
@@ -8,20 +9,12 @@ interface UseCanvasThemeProps {
 }
 
 export function useCanvasTheme({ canvas }: UseCanvasThemeProps) {
-  const { theme } = useTheme();
-
-  const themeColors: Record<"light" | "dark", string> = {
-    light: "#ffffff",
-    dark: "#121212",
-  };
-
-  const getCanvasBg = (): string => {
-    return theme === "dark" ? themeColors.dark : themeColors.light;
-  };
+  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
-    if (!canvas) return;
-    canvas.backgroundColor = getCanvasBg();
+    if (!canvas || !resolvedTheme) return;
+
+    canvas.backgroundColor = resolvedTheme === "dark" ? "#121212" : "#ffffff";
     canvas.renderAll();
-  }, [theme, canvas]);
+  }, [canvas, resolvedTheme]);
 }

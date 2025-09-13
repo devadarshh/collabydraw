@@ -27,7 +27,6 @@ export const useHandleAddShapes = ({
 
       if (!canvas) return;
 
-      // Reset common canvas properties
       const resetCanvasObjects = () => {
         canvas.forEachObject((obj) => {
           obj.selectable = false;
@@ -44,7 +43,7 @@ export const useHandleAddShapes = ({
         canvas.forEachObject((obj) => {
           obj.selectable = true;
           obj.evented = true;
-          obj.lockRotation = true;
+          obj.lockRotation = false;
         });
         canvas.defaultCursor = "default";
         canvas.hoverCursor = "move";
@@ -64,10 +63,7 @@ export const useHandleAddShapes = ({
 
         canvas.isDrawingMode = false;
         canvas.selection = false;
-        canvas.forEachObject((obj) => {
-          obj.selectable = false;
-          obj.evented = false;
-        });
+        resetCanvasObjects();
         canvas.defaultCursor = "grab";
       } else if (type === "freeDraw") {
         setMode("freeDraw");
@@ -93,7 +89,6 @@ export const useHandleAddShapes = ({
         canvas.defaultCursor = "text";
         canvas.hoverCursor = "text";
       } else {
-        // Shapes like rectangle, ellipse, arrow, diamond
         setMode("draw");
         setDrawingShape(type);
 

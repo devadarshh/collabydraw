@@ -7,7 +7,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useEffect } from "react";
 import { ShapeType, tools } from "@/types/tools";
 
 interface ToolbarProps {
@@ -16,15 +15,6 @@ interface ToolbarProps {
 }
 
 export const Toolbar = ({ activeTool, onToolChange }: ToolbarProps) => {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const tool = tools.find((t) => t.shortcut === e.key);
-      if (tool) onToolChange(tool.id);
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onToolChange]);
-
   return (
     <div className="floating-toolbar">
       <TooltipProvider>

@@ -13,7 +13,6 @@ declare module "fabric" {
     }
   }
 }
-
 type CustomFabricObject = fabric.Object & { id?: string };
 
 interface UseDrawShapesProps {
@@ -56,9 +55,9 @@ export function useDrawShapes({
     }
   };
 
-  // Free draw setup
   useEffect(() => {
     if (!canvas) return;
+
     canvas.isDrawingMode = mode === "freeDraw";
     if (canvas.freeDrawingBrush && mode === "freeDraw") {
       canvas.freeDrawingBrush.color = strokeColor;
@@ -66,7 +65,6 @@ export function useDrawShapes({
     }
   }, [canvas, mode, strokeColor, strokeWidth]);
 
-  // Update selected object properties
   useEffect(() => {
     if (!canvas) return;
     const active = canvas.getActiveObject();
@@ -82,12 +80,12 @@ export function useDrawShapes({
         opacity: opacity / 100,
       });
     } else {
-      active.set({
-        stroke: strokeColor,
-        fill: fillColor,
-        strokeWidth,
-        opacity: opacity / 100,
-      });
+      // active.set({
+      //   stroke: strokeColor,
+      //   fill: fillColor,
+      //   strokeWidth,
+      //   opacity: opacity / 100,
+      // });
     }
 
     active.setCoords();
@@ -121,7 +119,6 @@ export function useDrawShapes({
         if (target) {
           canvas.remove(target);
 
-          // Broadcast deletion to others
           // @ts-ignore
           if (ws && isConnected && roomId && target.id) {
             ws.send(
@@ -134,7 +131,7 @@ export function useDrawShapes({
             );
           }
         }
-        return; // stop further drawing logic
+        return;
       }
 
       if (mode !== "draw" || !drawingShape) return;

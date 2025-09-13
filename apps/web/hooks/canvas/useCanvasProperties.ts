@@ -7,22 +7,20 @@ interface CanvasProperties {
   fillColor: string;
   strokeWidth: number;
   opacity: number;
-  roughness: number;
   fontFamily: string;
   fontSize: number;
   textAlign: "left" | "center" | "right";
-  strokeStyle: StrokeStyle; // 🔥 NEW
-  textColor: string; // ✅ new
+  strokeStyle: StrokeStyle;
+  textColor: string;
   setStrokeColor: (color: string) => void;
   setFillColor: (color: string) => void;
   setStrokeWidth: (w: number) => void;
   setOpacity: (o: number) => void;
-  setRoughness: (r: number) => void;
   setFontFamily: (f: string) => void;
   setFontSize: (s: number) => void;
   setTextAlign: (a: "left" | "center" | "right") => void;
-  setStrokeStyle: (s: StrokeStyle) => void; // 🔥 NEW
-  setTextColor: (color: string) => void; // ✅ new
+  setStrokeStyle: (s: StrokeStyle) => void;
+  setTextColor: (color: string) => void;
 }
 
 export const useCanvasProperties = create<CanvasProperties>((set) => ({
@@ -30,17 +28,15 @@ export const useCanvasProperties = create<CanvasProperties>((set) => ({
   fillColor: "#ffffff",
   strokeWidth: 2,
   opacity: 100,
-  roughness: 0,
   fontFamily: "Assistant",
   fontSize: 18,
   textAlign: "left",
-  strokeStyle: "solid", // 🔥 default
+  strokeStyle: "solid",
   textColor: "#000000",
   setStrokeColor: (strokeColor) => set({ strokeColor }),
   setFillColor: (fillColor) => set({ fillColor }),
   setStrokeWidth: (strokeWidth) => set({ strokeWidth }),
   setOpacity: (opacity) => set({ opacity }),
-  setRoughness: (roughness) => set({ roughness }),
   setFontFamily: (fontFamily) => set({ fontFamily }),
   setFontSize: (fontSize) => set({ fontSize }),
   setTextAlign: (textAlign) => set({ textAlign }),
