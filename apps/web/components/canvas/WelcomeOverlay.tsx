@@ -1,5 +1,6 @@
 import { Settings, Square, Circle } from "lucide-react";
 import { Button } from "../ui/button";
+import dynamic from "next/dynamic";
 
 interface WelcomeOverlayProps {
   onDismiss: () => void;
