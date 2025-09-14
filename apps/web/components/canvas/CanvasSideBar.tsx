@@ -2,13 +2,13 @@
 
 import React, { useEffect } from "react";
 import { X, Settings } from "lucide-react";
-import { PropertiesPanel } from "./PropertiesPanel";
-import { ResponsiveSidebar } from "@/components/canvas/ResponsiveSideBar";
-import { InfoSidebar } from "./InfoSidebar";
+import { PropertiesPanel } from "../layout/PropertiesPanel";
+import { ResponsiveSidebar } from "@/components/layout/ResponsiveSideBar";
+import { InfoSidebar } from "../layout/InfoSidebar";
 import * as fabric from "fabric";
 import { ShapeType, tools } from "@/types/tools";
-import { MobileBottomBar } from "../MobileBottomBar";
-import { useWsStore } from "@/hooks/useWsStore";
+import { MobileBottomBar } from "../layout/MobileBottomBar";
+import { useWsStore } from "@/hooks/websocket/useWsStore";
 
 interface CanvasSidebarProps {
   showPropertiesPanel: boolean;
@@ -32,6 +32,7 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
   setZoom,
 }) => {
   const isConnected = useWsStore((state) => state.isConnected);
+
   useEffect(() => {
     const toolsWithProperties = tools
       .map((t) => t.id)
@@ -44,7 +45,6 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
     }
   }, [selectedTool, setShowPropertiesPanel]);
 
-  // Zoom handlers
   const handleZoomIn = () => {
     if (canvas) {
       canvas.setZoom(canvas.getZoom() * 1.1);
@@ -66,7 +66,6 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
 
   return (
     <>
-      {/* --- Desktop Properties Panel --- */}
       <div
         className={`fixed top-0 mt-28 left-0 z-40 bg-richblack-800 text-yellow-400 shadow-lg transform transition-transform duration-300 hidden sm:block
           ${showPropertiesPanel ? "translate-x-0" : "-translate-x-full"}`}
@@ -76,22 +75,18 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           onClose={() => setShowPropertiesPanel(false)}
         />
       </div>
-
-      {/* --- Desktop InfoSidebar --- */}
       <div
         className={`hidden sm:flex sm:flex-col sm:fixed sm:top-0 sm:right-0 sm:h-screen sm:w-78 z-40 transition-transform duration-300
           ${showSidebar ? "translate-x-0" : "translate-x-full"}`}
       >
         <InfoSidebar />
       </div>
-
-      {/* --- Desktop Settings Button --- */}
       <div className="absolute top-4 right-4 z-50 hidden sm:block">
         <button
           onClick={() => setShowSidebar((prev) => !prev)}
           className={`flex items-center gap-2 px-3 py-1.5 text-sm border border-border rounded-md transition-colors ${
             isConnected
-              ? "bg-green-600 text-white" // ✅ connected
+              ? "bg-green-600 text-white"
               : showSidebar
                 ? "bg-gradient-to-r from-[#605ebc] to-[#605ebc] text-white"
                 : "hover:bg-gradient-to-r hover:from-[#8d8bd6] hover:to-[#8d8bd6] hover:text-white"
@@ -107,7 +102,6 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           </span>
         </button>
       </div>
-      {/* --- Mobile Properties Panel --- */}
       <div
         className={`fixed left-0 right-0 bottom-0 z-40 sm:hidden h-[60vh] shadow-lg overflow-y-auto bg-richblack-800 text-yellow-400 border-t border-[#605ebc33] transform transition-transform duration-300 ${
           showPropertiesPanel ? "translate-y-0" : "translate-y-full"
@@ -118,8 +112,6 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           onClose={() => setShowPropertiesPanel(false)}
         />
       </div>
-
-      {/* --- Mobile Bottom Bar --- */}
       <MobileBottomBar
         zoomIn={handleZoomIn}
         zoomOut={handleZoomOut}
@@ -128,10 +120,8 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
         showSidebar={showSidebar}
         setShowSidebar={setShowSidebar}
         onOpenPropertiesPanel={() => setShowPropertiesPanel(true)}
-        selectedTool={selectedTool} // <-- pass this
+        selectedTool={selectedTool}
       />
-
-      {/* --- Desktop Zoom Control --- */}
       <ResponsiveSidebar
         zoomIn={handleZoomIn}
         zoomOut={handleZoomOut}

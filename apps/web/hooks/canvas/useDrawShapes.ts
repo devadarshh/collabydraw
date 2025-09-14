@@ -4,7 +4,7 @@ import { useEffect, Dispatch, SetStateAction } from "react";
 import * as fabric from "fabric";
 import { ShapeType } from "@/types/tools";
 import { useCanvasProperties } from "./useCanvasProperties";
-import { useWsStore } from "../useWsStore";
+import { useWsStore } from "../websocket/useWsStore";
 
 declare module "fabric" {
   namespace fabric {

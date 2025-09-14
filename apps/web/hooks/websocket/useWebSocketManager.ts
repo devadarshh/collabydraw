@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import * as fabric from "fabric";
 import { toast } from "sonner";
 import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
-import { useWsStore } from "@/hooks/useWsStore";
+import { useWsStore } from "@/hooks/websocket/useWsStore";
 
 // Add 'id' to fabric's Object interface for our custom property
 declare module "fabric" {

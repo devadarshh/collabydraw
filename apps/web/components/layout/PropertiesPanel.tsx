@@ -42,7 +42,7 @@ export function PropertiesPanel({
     fontFamily,
     fontSize,
     textAlign,
-    strokeStyle, // 🔥
+    strokeStyle,
     setStrokeColor,
     setFillColor,
     setStrokeWidth,
@@ -50,7 +50,7 @@ export function PropertiesPanel({
     setFontFamily,
     setFontSize,
     setTextAlign,
-    setStrokeStyle, // 🔥
+    setStrokeStyle,
   } = useCanvasProperties();
 
   const [customStroke, setCustomStroke] = useState(strokeColor);
@@ -79,7 +79,6 @@ export function PropertiesPanel({
         className
       )}
     >
-      {/* Header */}
       <div className="flex items-center justify-between mb-1 sm:mb-2">
         <h2 className="font-semibold capitalize text-[#605ebc] text-sm sm:text-base">
           {selectedTool} Properties
@@ -93,7 +92,6 @@ export function PropertiesPanel({
           </button>
         )}
       </div>
-      {/* Stroke Section */}
       {(isShapeTool || isTextTool) && (
         <section>
           <h3 className="text-xs font-semibold text-[#605ebc] mb-1">Stroke</h3>
@@ -117,7 +115,6 @@ export function PropertiesPanel({
                 }}
               />
             ))}
-            {/* Custom Color Picker */}
             <input
               type="color"
               value={customStroke}
@@ -129,7 +126,6 @@ export function PropertiesPanel({
             />
           </div>
 
-          {/* Width (hidden for text) */}
           {!isTextTool && (
             <>
               <h4 className="text-[11px] font-semibold text-[#605ebc] mb-1">
@@ -156,7 +152,6 @@ export function PropertiesPanel({
         </section>
       )}
 
-      {/* Fill Section */}
       {(isShapeTool || isTextTool) &&
         !["line", "freeDraw", "arrow", "text"].includes(selectedTool) && (
           <section>
@@ -181,7 +176,6 @@ export function PropertiesPanel({
                   }}
                 />
               ))}
-              {/* Custom Fill Picker */}
               <input
                 type="color"
                 value={customFill}
@@ -195,7 +189,6 @@ export function PropertiesPanel({
           </section>
         )}
 
-      {/* Stroke Style Section */}
       {isShapeTool && selectedTool !== "freeDraw" && (
         <section>
           <h4 className="text-[11px] font-semibold text-[#605ebc] mb-1">
@@ -240,7 +233,6 @@ export function PropertiesPanel({
         </section>
       )}
 
-      {/* Text Section */}
       {isTextTool && (
         <section>
           <h3 className="text-xs font-semibold text-[#605ebc] mb-1">Text</h3>
@@ -297,7 +289,6 @@ export function PropertiesPanel({
         </section>
       )}
 
-      {/* Style Section */}
       {(isShapeTool || isTextTool) &&
         selectedTool !== "line" &&
         selectedTool !== "freeDraw" && (

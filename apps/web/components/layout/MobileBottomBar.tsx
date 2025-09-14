@@ -1,7 +1,7 @@
 import { Settings, Paintbrush } from "lucide-react";
 import { ZoomControl } from "@/components/canvas/ZoomControl";
 import { ShapeType } from "@/types/tools";
-import { useWsStore } from "@/hooks/useWsStore";
+import { useWsStore } from "@/hooks/websocket/useWsStore";
 
 interface MobileBottomBarProps {
   zoomIn: () => void;
@@ -50,7 +50,6 @@ export function MobileBottomBar({
         <Settings className="w-5 h-5" />
       </button>
 
-      {/* Paintbrush button */}
       {showPaintIcon && (
         <button
           onClick={onOpenPropertiesPanel}
@@ -60,7 +59,6 @@ export function MobileBottomBar({
         </button>
       )}
 
-      {/* Zoom Controls */}
       <ZoomControl
         zoomIn={zoomIn}
         zoomOut={zoomOut}

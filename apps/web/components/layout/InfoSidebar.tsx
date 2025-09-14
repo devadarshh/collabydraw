@@ -8,13 +8,11 @@ import {
   Github,
   Twitter,
   Linkedin,
-  Globe,
   Sun,
   Moon,
   Settings2,
   ExternalLink,
   Trash2,
-  XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -23,10 +21,10 @@ import Link from "next/link";
 
 import { useTheme } from "next-themes";
 import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
-import { useRoomDialog } from "@/hooks/useRoomDialog";
+import { useRoomDialog } from "@/hooks/websocket/useRoomDialog";
 import { toast } from "sonner";
-import { useAuthStore } from "@/hooks/useAuthStore";
-import { useWsStore } from "@/hooks/useWsStore";
+import { useAuthStore } from "@/hooks/auth/useAuthStore";
+import { useWsStore } from "@/hooks/websocket/useWsStore";
 
 interface InfoSidebarProps {
   className?: string;
@@ -144,7 +142,6 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
           )}
         </div>
 
-        {/* File ops */}
         <section>
           <SectionTitle>File Operations</SectionTitle>
           <div className="flex flex-col gap-2">
@@ -163,7 +160,6 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
           </div>
         </section>
 
-        {/* Background */}
         <section>
           <SectionTitle>Canvas Background</SectionTitle>
           <div className="flex gap-2 mb-2">
@@ -195,7 +191,6 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
           </div>
         </section>
 
-        {/* Sharing */}
         <section>
           <SectionTitle>Sharing</SectionTitle>
           <div className="flex flex-col gap-2">
@@ -215,7 +210,6 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
           </div>
         </section>
 
-        {/* Theme */}
         <section>
           <SectionTitle>Appearance</SectionTitle>
           <button
@@ -231,7 +225,6 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
           </button>
         </section>
 
-        {/* Social */}
         <section>
           <SectionTitle>Connect With Me</SectionTitle>
           <div className="flex flex-col gap-2">

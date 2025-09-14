@@ -2,7 +2,7 @@
 
 import { Settings } from "lucide-react";
 import { ZoomControl } from "@/components/canvas/ZoomControl";
-import { InfoSidebar } from "@/components/canvas/InfoSidebar";
+import { InfoSidebar } from "@/components/layout/InfoSidebar";
 import { cn } from "@/lib/utils";
 
 interface ResponsiveSidebarProps {
@@ -40,7 +40,6 @@ export function ResponsiveSidebar({
         <InfoSidebar />
       </div>
 
-      {/* Desktop & Tablet ZoomControl */}
       <div className="hidden sm:flex flex-col fixed left-6 bottom-6 z-[999] gap-2">
         <ZoomControl
           zoomIn={zoomIn}

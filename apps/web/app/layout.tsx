@@ -3,7 +3,7 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { Roboto } from "next/font/google";
-import CreateRoomDialog from "@/components/CreateRoomDialog";
+import CreateRoomDialog from "@/components/room/CreateRoomDialog";
 
 const roboto = Roboto({
   subsets: ["latin"],

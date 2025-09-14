@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import * as fabric from "fabric";
 import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
-import { useWsStore } from "@/hooks/useWsStore";
+import { useWsStore } from "@/hooks/websocket/useWsStore";
 import { ShapeType } from "@/types/tools";
 type ShapeData = {
   id: string;

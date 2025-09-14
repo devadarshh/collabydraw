@@ -51,6 +51,7 @@ To run this project, you will need to set the following environment variables in
 - `PORT`
 - `JWT_SECRET`
 - `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_WS_URL`
 
 ## 🚀 Installation & Running Locally
 
@@ -101,7 +102,3 @@ pnpm dev
 
 This project is licensed under a **Custom Personal Use License** — you may view and learn from the code, but **commercial use, redistribution, or claiming authorship is strictly prohibited**.
 See the full [LICENSE](./LICENSE) for details.
-
-```
-
-```

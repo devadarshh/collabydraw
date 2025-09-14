@@ -2,12 +2,12 @@
 
 import React, { useState } from "react";
 import axios from "axios";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/components/room/ui/input";
+import { Button } from "@/components/room/ui/button";
+import { Label } from "@/components/room/ui/label";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/hooks/useAuthStore"; // ✅ import store
+import { useAuthStore } from "@/hooks/auth/useAuthStore"; // ✅ import store
 
 const RegisterPage = () => {
   const router = useRouter();

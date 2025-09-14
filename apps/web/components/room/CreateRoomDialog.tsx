@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import axios from "axios";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 import { Play, XCircle } from "lucide-react";
 import {
   Dialog,
@@ -10,10 +10,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogOverlay,
-} from "./ui/dialog";
-import { useRoomDialog } from "@/hooks/useRoomDialog";
-import { useAuthStore } from "@/hooks/useAuthStore";
-import { useWsStore } from "@/hooks/useWsStore";
+} from "../ui/dialog";
+import { useRoomDialog } from "@/hooks/websocket/useRoomDialog";
+import { useAuthStore } from "@/hooks/auth/useAuthStore";
+import { useWsStore } from "@/hooks/websocket/useWsStore";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 

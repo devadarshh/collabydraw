@@ -17,7 +17,7 @@ import { useCanvasTheme } from "@/hooks/canvas/UseCanvasTheme";
 import { useShortcutKeys } from "@/hooks/canvas/useKeyboardShortcuts";
 import { useHandleAddShapes } from "@/hooks/canvas/useHandleAddShapes";
 import { useGrabMode } from "@/hooks/canvas/useGrabMode";
-import { useWebSocketManager } from "@/hooks/useWebSocketManager";
+import { useWebSocketManager } from "@/hooks/websocket/useWebSocketManager";
 import throttle from "lodash/throttle";
 import { debounce } from "lodash";
 
