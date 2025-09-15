@@ -1,6 +1,11 @@
 import * as fabric from "fabric";
 
+/**
+
+ * @param canvas - The fabric.Canvas instance to configure
+ */
 export const applyFabricConfig = (canvas: fabric.Canvas) => {
+  canvas.selection = true;
   canvas.selectionColor = "rgba(0, 120, 255, 0.05)";
   canvas.selectionBorderColor = "rgba(0, 120, 255, 0.8)";
   canvas.selectionLineWidth = 1.5;

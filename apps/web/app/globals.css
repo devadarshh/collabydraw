@@ -189,7 +189,6 @@ a {
   }
 }
 
-/* ========== Extra styles from React app.css ========== */
 #root {
   max-width: 1280px;
   margin: 0 auto;
@@ -238,7 +237,6 @@ a {
   @apply transition-all duration-150 rounded-md text-foreground;
 }
 
-/* Hover: lighter gradient */
 .tool-button:hover {
   background: linear-gradient(to right, #8d8bd6 0%, #8d8bd6 100%);
   color: white;

@@ -3,14 +3,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import * as fabric from "fabric";
 import { useTheme } from "next-themes";
+import throttle from "lodash/throttle";
+import { debounce } from "lodash";
 
 import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
-import { applyFabricConfig } from "@/config/fabricConfig";
-import { ShapeType } from "@/types/tools";
-
-import { Toolbar } from "./ToolBar";
-import { CanvasSidebar } from "./CanvasSideBar";
-
 import { useDrawShapes } from "@/hooks/canvas/useDrawShapes";
 import { useCanvasZoom } from "@/hooks/canvas/useCanvasZoom";
 import { useCanvasTheme } from "@/hooks/canvas/UseCanvasTheme";
@@ -18,14 +14,19 @@ import { useShortcutKeys } from "@/hooks/canvas/useKeyboardShortcuts";
 import { useHandleAddShapes } from "@/hooks/canvas/useHandleAddShapes";
 import { useGrabMode } from "@/hooks/canvas/useGrabMode";
 import { useWebSocketManager } from "@/hooks/websocket/useWebSocketManager";
-import throttle from "lodash/throttle";
-import { debounce } from "lodash";
 
-const CanvasBoard = () => {
+import { Toolbar } from "./ToolBar";
+import { CanvasSidebar } from "./CanvasSideBar";
+
+import { applyFabricConfig } from "@/config/fabricConfig";
+import { ShapeType } from "@/types/tools";
+
+const CanvasBoard: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { canvas, setCanvas } = useCanvasStore();
-  const [zoom, setZoom] = useState(100);
+  const { resolvedTheme } = useTheme();
 
+  const [zoom, setZoom] = useState(100);
   const [mode, setMode] = useState<
     "select" | "draw" | "eraser" | "freeDraw" | "grab" | null
   >("select");
@@ -37,7 +38,6 @@ const CanvasBoard = () => {
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [selectedTool, setSelectedTool] = useState<ShapeType>("select");
-  const { resolvedTheme } = useTheme();
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -49,13 +49,13 @@ const CanvasBoard = () => {
       selection: true,
       backgroundColor: resolvedTheme === "dark" ? "#121212" : "#ffffff",
     });
+
     applyFabricConfig(initCanvas);
     setCanvas(initCanvas);
 
-    const saved = localStorage.getItem("fabric-canvas");
-    if (saved) {
-      initCanvas.loadFromJSON(saved, () => {
-        // to avoiddd race contiton
+    const savedCanvas = localStorage.getItem("fabric-canvas");
+    if (savedCanvas) {
+      initCanvas.loadFromJSON(savedCanvas, () => {
         setTimeout(() => initCanvas.renderAll(), 0);
       });
     }
@@ -66,6 +66,7 @@ const CanvasBoard = () => {
         JSON.stringify(initCanvas.toJSON())
       );
     }, 500);
+
     initCanvas.on("object:added", saveCanvasToLocal);
     initCanvas.on("object:modified", saveCanvasToLocal);
     initCanvas.on("object:removed", saveCanvasToLocal);
@@ -75,6 +76,7 @@ const CanvasBoard = () => {
       initCanvas.setHeight(parent.clientHeight);
       initCanvas.renderAll();
     }, 200);
+
     window.addEventListener("resize", handleResize);
 
     return () => {
@@ -86,7 +88,7 @@ const CanvasBoard = () => {
       handleResize.cancel();
       initCanvas.dispose();
     };
-  }, []);
+  }, [resolvedTheme, setCanvas]);
 
   const handleAddShapes = useHandleAddShapes({
     canvas,
@@ -100,18 +102,17 @@ const CanvasBoard = () => {
     setActiveTool(tool);
     setSelectedTool(tool);
 
-    if (
-      [
-        "rectangle",
-        "circle",
-        "ellipse",
-        "line",
-        "diamond",
-        "arrow",
-        "freeDraw",
-        "text",
-      ].includes(tool)
-    ) {
+    const drawableTools: ShapeType[] = [
+      "rectangle",
+      "ellipse",
+      "line",
+      "diamond",
+      "arrow",
+      "freeDraw",
+      "text",
+    ];
+
+    if (drawableTools.includes(tool)) {
       setMode("draw");
       setShowPropertiesPanel(true);
       canvas?.getObjects().forEach((obj) => {
@@ -119,7 +120,6 @@ const CanvasBoard = () => {
         obj.evented = true;
         obj.hoverCursor = "default";
       });
-      canvas?.renderAll();
     } else if (tool === "eraser") {
       setMode("eraser");
       setShowPropertiesPanel(false);
@@ -133,17 +133,16 @@ const CanvasBoard = () => {
         obj.selectable = true;
         obj.evented = true;
       });
-      canvas?.renderAll();
     }
 
+    canvas?.renderAll();
     handleAddShapes(tool);
   };
 
+  // Hooks for canvas behavior
   useShortcutKeys({ handleAddShapes: handleShapeSelect });
   useCanvasTheme({ canvas });
-
   useGrabMode({ canvas, mode });
-
   useDrawShapes({
     canvas,
     mode,
@@ -153,12 +152,11 @@ const CanvasBoard = () => {
     startPoint,
   });
   useCanvasZoom(canvas, setZoom);
-
   useWebSocketManager();
 
   return (
     <div className="relative w-full h-full">
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] sm:w-auto max-w-lg flex justify-center px-2 sm:px-0">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] sm:w-auto max-w-lg flex justify-center px-2 sm:px-0 cursor-pointer">
         <Toolbar activeTool={activeTool} onToolChange={handleShapeSelect} />
       </div>
 

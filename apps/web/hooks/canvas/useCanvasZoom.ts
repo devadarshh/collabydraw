@@ -1,15 +1,16 @@
 "use client";
-import { useEffect } from "react";
 import * as fabric from "fabric";
+import { useEffect } from "react";
+import type { Canvas, TEvent, Point } from "fabric";
 
 export function useCanvasZoom(
-  canvas: fabric.Canvas | null,
+  canvas: Canvas | null,
   setZoom: (zoom: number) => void
-) {
+): void {
   useEffect(() => {
     if (!canvas) return;
 
-    const wheelHandler = (opt: fabric.TEvent<WheelEvent>) => {
+    const wheelHandler = (opt: TEvent<WheelEvent>) => {
       const evt = opt.e as WheelEvent;
 
       if (!evt.ctrlKey && !evt.metaKey) return;
@@ -22,7 +23,7 @@ export function useCanvasZoom(
       zoom *= evt.deltaY < 0 ? 1 + zoomFactor : 1 - zoomFactor;
 
       zoom = Math.min(Math.max(zoom, 0.2), 5);
-      // zoom into the spot wereeee userrrr has mouseee on
+
       const rect = canvas.getElement().getBoundingClientRect();
       const pointer = new fabric.Point(
         evt.clientX - rect.left,

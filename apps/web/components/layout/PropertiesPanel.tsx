@@ -1,9 +1,9 @@
 "use client";
 
-import { useCanvasProperties } from "@/hooks/canvas/useCanvasProperties";
+import { useState } from "react";
 import { X, AlignLeft, AlignCenter, AlignRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useCanvasProperties } from "@/hooks/canvas/useCanvasProperties";
 
 interface PropertiesPanelProps {
   selectedTool: string;
@@ -24,6 +24,7 @@ const colorSwatches = [
   "#14b8a6",
   "transparent",
 ];
+
 const strokeWidths = [1, 2, 3, 4, 5, 8];
 const fontFamilies = ["Inter", "Serif", "Mono"] as const;
 const fontSizes = [12, 16, 24, 36];
@@ -69,13 +70,32 @@ export function PropertiesPanel({
   const transparentBg =
     "repeating-conic-gradient(#e5e5e5 0% 25%, #fafafa 0% 50%)";
 
+  const renderColorButton = (
+    color: string,
+    currentColor: string,
+    onClick: (c: string) => void,
+    prefix: string
+  ) => (
+    <button
+      key={`${prefix}-${color}`}
+      onClick={() => onClick(color)}
+      className={cn(
+        "w-full aspect-square rounded border transition-transform hover:scale-105 cursor-pointer",
+        currentColor === color
+          ? "ring-2 ring-[#605ebc] ring-offset-1"
+          : "border-[#605ebc33]"
+      )}
+      style={{
+        background: color === "transparent" ? transparentBg : color,
+        backgroundSize: "12px 12px",
+      }}
+    />
+  );
+
   return (
     <div
       className={cn(
-        "flex flex-col w-64 sm:w-72 bg-white dark:bg-[#1e1e1e] text-[#111] dark:text-[#eee]",
-        "border-l border-[#605ebc33] p-3 sm:p-4 space-y-3 sm:space-y-4",
-        "overflow-y-auto max-h-[85vh] sm:max-h-[90vh]",
-        "transition-transform duration-300 ease-in-out",
+        "flex flex-col w-64 sm:w-72 bg-white dark:bg-[#1e1e1e] text-[#111] dark:text-[#eee] border-l border-[#605ebc33] p-3 sm:p-4 space-y-3 sm:space-y-4 overflow-y-auto max-h-[90vh] transition-transform duration-300 ease-in-out",
         className
       )}
     >
@@ -92,29 +112,22 @@ export function PropertiesPanel({
           </button>
         )}
       </div>
+
       {(isShapeTool || isTextTool) && (
         <section>
           <h3 className="text-xs font-semibold text-[#605ebc] mb-1">Stroke</h3>
           <div className="grid grid-cols-6 gap-1 mb-2">
-            {colorSwatches.map((color) => (
-              <button
-                key={`stroke-${color}`}
-                onClick={() => {
-                  setStrokeColor(color);
-                  setCustomStroke(color);
-                }}
-                className={cn(
-                  "w-full aspect-square rounded border transition-transform hover:scale-105 cursor-pointer",
-                  strokeColor === color
-                    ? "ring-2 ring-[#605ebc] ring-offset-1"
-                    : "border-[#605ebc33]"
-                )}
-                style={{
-                  background: color === "transparent" ? transparentBg : color,
-                  backgroundSize: "12px 12px",
-                }}
-              />
-            ))}
+            {colorSwatches.map((color) =>
+              renderColorButton(
+                color,
+                strokeColor,
+                (c) => {
+                  setStrokeColor(c);
+                  setCustomStroke(c);
+                },
+                "stroke"
+              )
+            )}
             <input
               type="color"
               value={customStroke}
@@ -157,25 +170,17 @@ export function PropertiesPanel({
           <section>
             <h3 className="text-xs font-semibold text-[#605ebc] mb-1">Fill</h3>
             <div className="grid grid-cols-6 gap-1">
-              {colorSwatches.map((color) => (
-                <button
-                  key={`fill-${color}`}
-                  onClick={() => {
-                    setFillColor(color);
-                    setCustomFill(color);
-                  }}
-                  className={cn(
-                    "w-full aspect-square rounded border transition-transform hover:scale-105 cursor-pointer",
-                    fillColor === color
-                      ? "ring-2 ring-[#605ebc] ring-offset-1"
-                      : "border-[#605ebc33]"
-                  )}
-                  style={{
-                    background: color === "transparent" ? transparentBg : color,
-                    backgroundSize: "12px 12px",
-                  }}
-                />
-              ))}
+              {colorSwatches.map((color) =>
+                renderColorButton(
+                  color,
+                  fillColor,
+                  (c) => {
+                    setFillColor(c);
+                    setCustomFill(c);
+                  },
+                  "fill"
+                )
+              )}
               <input
                 type="color"
                 value={customFill}
@@ -210,12 +215,7 @@ export function PropertiesPanel({
                     : "border-[#605ebc33] hover:bg-[#8d8bd622]"
                 )}
               >
-                <svg
-                  width="28"
-                  height="12"
-                  viewBox="0 0 28 12"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
+                <svg width="28" height="12" viewBox="0 0 28 12">
                   <line
                     x1="2"
                     y1="6"
@@ -236,6 +236,7 @@ export function PropertiesPanel({
       {isTextTool && (
         <section>
           <h3 className="text-xs font-semibold text-[#605ebc] mb-1">Text</h3>
+
           <div className="flex gap-1 mb-2">
             {fontFamilies.map((family) => (
               <button
@@ -252,6 +253,7 @@ export function PropertiesPanel({
               </button>
             ))}
           </div>
+
           <div className="flex gap-1 mb-2">
             {fontSizes.map((size) => (
               <button
@@ -268,6 +270,7 @@ export function PropertiesPanel({
               </button>
             ))}
           </div>
+
           <div className="flex gap-1">
             {textAlignments.map((align) => (
               <button
@@ -290,8 +293,7 @@ export function PropertiesPanel({
       )}
 
       {(isShapeTool || isTextTool) &&
-        selectedTool !== "line" &&
-        selectedTool !== "freeDraw" && (
+        !["line", "freeDraw"].includes(selectedTool) && (
           <section>
             <h3 className="font-semibold text-gray-400 mb-1 text-[11px]">
               Style
@@ -302,8 +304,8 @@ export function PropertiesPanel({
             </label>
             <input
               type="range"
-              min="0"
-              max="100"
+              min={0}
+              max={100}
               value={opacity}
               onChange={(e) => setOpacity(Number(e.target.value))}
               className="w-full h-1.5 accent-[#605ebc] bg-gray-200 dark:bg-gray-700 rounded cursor-pointer mb-2"

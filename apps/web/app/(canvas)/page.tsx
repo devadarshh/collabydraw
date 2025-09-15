@@ -1,14 +1,13 @@
 "use client";
 
-import CanvasBoard from "@/components/canvas/CanvasBoard";
-import { useFirstVisit } from "@/hooks/useFirstVisit";
 import dynamic from "next/dynamic";
 
+import CanvasBoard from "@/components/canvas/CanvasBoard";
+import { useFirstVisit } from "@/hooks/useFirstVisit";
+
 const WelcomeOverlay = dynamic(
-  () =>
-    import("@/components/canvas/WelcomeOverlay").then(
-      (mod) => mod.WelcomeOverlay
-    ),
+  async () =>
+    (await import("@/components/canvas/WelcomeOverlay")).WelcomeOverlay,
   {
     ssr: false,
     loading: () => (
@@ -21,11 +20,12 @@ const WelcomeOverlay = dynamic(
   }
 );
 
-const CanvasPage = () => {
+const CanvasPage: React.FC = () => {
   const { isFirstVisit, dismiss } = useFirstVisit("hasSeenWelcome");
+
   return (
     <div className="flex h-screen w-screen overflow-hidden">
-      <div className="flex-1">
+      <div className="flex-1 relative">
         <CanvasBoard />
         {isFirstVisit && <WelcomeOverlay onDismiss={dismiss} />}
       </div>

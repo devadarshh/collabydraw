@@ -1,4 +1,8 @@
+"use client";
+
+import React from "react";
 import { Settings, Paintbrush } from "lucide-react";
+
 import { ZoomControl } from "@/components/canvas/ZoomControl";
 import { ShapeType } from "@/types/tools";
 import { useWsStore } from "@/hooks/websocket/useWsStore";
@@ -14,7 +18,7 @@ interface MobileBottomBarProps {
   selectedTool: ShapeType | null;
 }
 
-export function MobileBottomBar({
+export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
   zoomIn,
   zoomOut,
   resetZoom,
@@ -23,8 +27,9 @@ export function MobileBottomBar({
   setShowSidebar,
   onOpenPropertiesPanel,
   selectedTool,
-}: MobileBottomBarProps) {
+}) => {
   const isConnected = useWsStore((state) => state.isConnected);
+
   const toolsWithProperties: ShapeType[] = [
     "rectangle",
     "ellipse",
@@ -40,12 +45,11 @@ export function MobileBottomBar({
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center p-2 bg-richblack-800 border-t border-richblack-700 text-[#605ebc] sm:hidden">
-      {/* Settings button */}
       <button
         onClick={() => setShowSidebar(!showSidebar)}
         className={`flex items-center justify-center w-10 h-10 rounded-full ${
           isConnected ? "bg-green-600" : "bg-[#605ebc]"
-        } text-white`}
+        } text-white cursor-pointer transition hover:brightness-110`}
       >
         <Settings className="w-5 h-5" />
       </button>
@@ -53,7 +57,7 @@ export function MobileBottomBar({
       {showPaintIcon && (
         <button
           onClick={onOpenPropertiesPanel}
-          className="flex items-center justify-center w-10 h-10 rounded-full bg-[#605ebc] text-white"
+          className="flex items-center justify-center w-10 h-10 rounded-full bg-[#605ebc] text-white cursor-pointer transition hover:brightness-110"
         >
           <Paintbrush className="w-5 h-5" />
         </button>
@@ -67,4 +71,4 @@ export function MobileBottomBar({
       />
     </div>
   );
-}
+};

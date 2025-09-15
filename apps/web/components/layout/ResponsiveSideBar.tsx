@@ -1,6 +1,5 @@
 "use client";
 
-import { Settings } from "lucide-react";
 import { ZoomControl } from "@/components/canvas/ZoomControl";
 import { InfoSidebar } from "@/components/layout/InfoSidebar";
 import { cn } from "@/lib/utils";
@@ -24,7 +23,7 @@ export function ResponsiveSidebar({
     <>
       <div
         className={cn(
-          "fixed left-0 right-0 bottom-0 z-40 transition-transform duration-300 sm:hidden h-3/4 shadow-lg overflow-y-auto bg-white dark:bg-[#1e1e1e] border-t border-[#605ebc33]",
+          "fixed left-0 right-0 bottom-0 z-40 h-3/4 shadow-lg overflow-y-auto bg-white dark:bg-[#1e1e1e] border-t border-[#605ebc33] transition-transform duration-300 sm:hidden",
           showSidebar ? "translate-y-0" : "translate-y-full"
         )}
       >

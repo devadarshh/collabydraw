@@ -20,82 +20,87 @@ export const useHandleAddShapes = ({
   setMode,
   setDrawingShape,
   setActiveTool,
-}: UseHandleAddShapesProps) => {
+}: UseHandleAddShapesProps): ((type: ShapeType) => void) => {
   const handleAddShapes = useCallback(
     (type: ShapeType) => {
       setActiveTool(type);
-
       if (!canvas) return;
 
-      const resetCanvasObjects = () => {
+      const resetCanvasObjects = (): void => {
         canvas.forEachObject((obj) => {
           obj.selectable = false;
           obj.evented = false;
         });
       };
 
-      if (type === "select") {
-        setMode("select");
-        setDrawingShape(null);
+      switch (type) {
+        case "select":
+          setMode("select");
+          setDrawingShape(null);
+          canvas.isDrawingMode = false;
+          canvas.selection = true;
+          canvas.forEachObject((obj) => {
+            obj.selectable = true;
+            obj.evented = true;
+            obj.lockRotation = false;
+          });
+          canvas.defaultCursor = "default";
+          canvas.hoverCursor = "move";
+          break;
 
-        canvas.isDrawingMode = false;
-        canvas.selection = true;
-        canvas.forEachObject((obj) => {
-          obj.selectable = true;
-          obj.evented = true;
-          obj.lockRotation = false;
-        });
-        canvas.defaultCursor = "default";
-        canvas.hoverCursor = "move";
-      } else if (type === "eraser") {
-        setMode("eraser");
-        setDrawingShape("eraser");
+        case "eraser":
+          setMode("eraser");
+          setDrawingShape("eraser");
+          canvas.isDrawingMode = false;
+          canvas.selection = false;
+          canvas.forEachObject((obj) => {
+            obj.evented = true;
+            obj.selectable = false;
+          });
+          canvas.defaultCursor = "not-allowed";
+          break;
 
-        canvas.isDrawingMode = false;
-        canvas.selection = false;
-        canvas.forEachObject((obj) => {
-          obj.evented = true;
-          obj.selectable = false;
-        });
-      } else if (type === "grab") {
-        setMode("grab");
-        setDrawingShape(null);
+        case "grab":
+          setMode("grab");
+          setDrawingShape(null);
+          canvas.isDrawingMode = false;
+          canvas.selection = false;
+          resetCanvasObjects();
+          canvas.defaultCursor = "grab";
+          canvas.hoverCursor = "grab";
+          break;
 
-        canvas.isDrawingMode = false;
-        canvas.selection = false;
-        resetCanvasObjects();
-        canvas.defaultCursor = "grab";
-      } else if (type === "freeDraw") {
-        setMode("freeDraw");
-        setDrawingShape("freeDraw");
+        case "freeDraw":
+          setMode("freeDraw");
+          setDrawingShape("freeDraw");
+          canvas.isDrawingMode = true;
+          canvas.selection = false;
+          canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
+          canvas.freeDrawingBrush.width = 3;
+          canvas.freeDrawingBrush.color = "blue";
+          resetCanvasObjects();
+          if (canvas.upperCanvasEl)
+            canvas.upperCanvasEl.style.cursor = "crosshair";
+          break;
 
-        canvas.isDrawingMode = true;
-        canvas.selection = false;
-        canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
-        canvas.freeDrawingBrush.width = 3;
-        canvas.freeDrawingBrush.color = "blue";
-        resetCanvasObjects();
+        case "text":
+          setMode("draw");
+          setDrawingShape("text");
+          canvas.isDrawingMode = false;
+          canvas.selection = false;
+          resetCanvasObjects();
+          canvas.defaultCursor = "text";
+          canvas.hoverCursor = "text";
+          break;
 
-        if (canvas.upperCanvasEl) {
-          canvas.upperCanvasEl.style.cursor = "crosshair";
-        }
-      } else if (type === "text") {
-        setMode("draw");
-        setDrawingShape("text");
-
-        canvas.isDrawingMode = false;
-        canvas.selection = false;
-        resetCanvasObjects();
-        canvas.defaultCursor = "text";
-        canvas.hoverCursor = "text";
-      } else {
-        setMode("draw");
-        setDrawingShape(type);
-
-        canvas.selection = false;
-        resetCanvasObjects();
-        canvas.defaultCursor = "crosshair";
-        canvas.hoverCursor = "crosshair";
+        default:
+          setMode("draw");
+          setDrawingShape(type);
+          canvas.selection = false;
+          resetCanvasObjects();
+          canvas.defaultCursor = "crosshair";
+          canvas.hoverCursor = "crosshair";
+          break;
       }
     },
     [canvas, setActiveTool, setDrawingShape, setMode]

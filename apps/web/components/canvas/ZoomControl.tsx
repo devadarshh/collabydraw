@@ -31,22 +31,25 @@ export const ZoomControl: React.FC<ZoomControlProps> = ({
     >
       <Button
         size="sm"
-        className={`flex items-center justify-center p-2 ${bgClass}`}
+        className={`flex items-center justify-center p-2 cursor-pointer ${bgClass}`}
         onClick={zoomOut}
       >
         <Minus className="w-4 h-4" />
       </Button>
+
       <div className="text-sm font-semibold w-12 text-center">{zoom}%</div>
+
       <Button
         size="sm"
-        className={`flex items-center justify-center p-2 ${bgClass}`}
+        className={`flex items-center justify-center p-2 cursor-pointer ${bgClass}`}
         onClick={zoomIn}
       >
         <Plus className="w-4 h-4" />
       </Button>
+
       <Button
         size="sm"
-        className={`flex items-center justify-center p-2 ${bgClass}`}
+        className={`flex items-center justify-center p-2 cursor-pointer ${bgClass}`}
         onClick={resetZoom}
       >
         <RefreshCcw className="w-4 h-4" />

@@ -1,9 +1,10 @@
 "use client";
 
+import React from "react";
+import Link from "next/link";
 import {
   Upload,
   Download,
-  Share2,
   Users,
   Github,
   Twitter,
@@ -14,17 +15,17 @@ import {
   ExternalLink,
   Trash2,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 
 import { useTheme } from "next-themes";
 import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
 import { useRoomDialog } from "@/hooks/websocket/useRoomDialog";
-import { toast } from "sonner";
 import { useAuthStore } from "@/hooks/auth/useAuthStore";
 import { useWsStore } from "@/hooks/websocket/useWsStore";
+import { toast } from "sonner";
 
 interface InfoSidebarProps {
   className?: string;
@@ -51,45 +52,29 @@ const socialLinks = [
   },
 ];
 
-export function InfoSidebar({ className }: InfoSidebarProps) {
+export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
   const { user, isLoggedIn, logout } = useAuthStore();
-  const colorOptions = ["#ffffff", "#f0f0f0", "#121212", "#fef3c7", "#d1fae5"];
   const { theme, setTheme } = useTheme();
-  const { backgroundColor, clearCanvas, setBackgroundColor } = useCanvasStore();
+  const { backgroundColor, setBackgroundColor, clearCanvas } = useCanvasStore();
   const { setOpen } = useRoomDialog();
-
   const { ws, roomId, setWs, setRoomId, setIsConnected } = useWsStore();
-  const isConnected = useWsStore((state) => state.isConnected);
+
+  const colorOptions = ["#ffffff", "#f0f0f0", "#121212", "#fef3c7", "#d1fae5"];
 
   const handleLogout = () => {
     logout();
     toast.success("Logged out successfully!");
   };
 
-  const handleCloseRoom = () => {
-    if (ws && roomId) {
-      ws.send(JSON.stringify({ type: "LEAVE_ROOM", roomId }));
-      ws.close();
+  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
-      setIsConnected(false);
-      setRoomId(null);
-      setWs(null);
-
-      toast.success("Room closed successfully!");
-    } else {
-      toast.error("No active room to close");
-    }
-  };
-
-  const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  const SectionTitle: React.FC<{ children: React.ReactNode }> = ({
+    children,
+  }) => (
     <h3 className="text-xs font-semibold text-[#605ebc] uppercase tracking-wider mb-2">
       {children}
     </h3>
   );
-
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  };
 
   return (
     <div
@@ -109,32 +94,31 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
           </p>
         </div>
 
-        {/* Auth buttons / user info */}
         <div className="flex flex-col gap-2 mb-4">
           {!isLoggedIn ? (
-            <div className="flex flex-col gap-2">
+            <>
               <Link href="/auth/signup" passHref>
-                <Button className="w-full">Create Account</Button>
+                <Button className="w-full cursor-pointer">
+                  Create Account
+                </Button>
               </Link>
               <Link href="/auth/signin" passHref>
                 <Button
                   variant="outline"
-                  className="w-full border-[#605ebc] text-[#605ebc] hover:bg-[#8d8bd622]"
+                  className="w-full border-[#605ebc] text-[#605ebc] hover:bg-[#8d8bd622] cursor-pointer"
                 >
                   Login
                 </Button>
               </Link>
-            </div>
+            </>
           ) : (
             <div className="flex flex-col border rounded-lg px-3 py-2 gap-2">
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-[#605ebc]">
-                  {user?.name}
-                </span>
-              </div>
+              <span className="text-sm font-semibold text-[#605ebc]">
+                {user?.name}
+              </span>
               <Button
                 onClick={handleLogout}
-                className="w-full border border-[#605ebc] text-red-500 bg-transparent hover:bg-red-50 dark:hover:bg-red-900"
+                className="w-full border border-[#605ebc] text-red-500 bg-transparent hover:bg-red-50 dark:hover:bg-red-900 cursor-pointer"
               >
                 Logout
               </Button>
@@ -149,13 +133,15 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
               onClick={() => toast.info("Import Drawing – Coming soon 🚀")}
               className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer"
             >
-              <Upload className="w-4 h-4 text-[#605ebc]" /> Import Drawing
+              <Upload className="w-4 h-4 text-[#605ebc]" />
+              Import Drawing
             </button>
             <button
               onClick={() => toast.info("Export Drawing – Coming soon 🚀")}
               className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer"
             >
-              <Download className="w-4 h-4 text-[#605ebc]" /> Export Drawing
+              <Download className="w-4 h-4 text-[#605ebc]" />
+              Export Drawing
             </button>
           </div>
         </section>
@@ -198,14 +184,15 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
               onClick={() => setOpen(true)}
               className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer"
             >
-              <Users className="w-4 h-4 text-[#605ebc]" /> Live Collaboration
+              <Users className="w-4 h-4 text-[#605ebc]" />
+              Live Collaboration
             </button>
-
             <button
-              onClick={() => clearCanvas()}
+              onClick={clearCanvas}
               className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-red-500 text-red-500 hover:bg-red-100 transition-all cursor-pointer"
             >
-              <Trash2 className="w-4 h-4 text-red-500" /> Clear Canvas
+              <Trash2 className="w-4 h-4 text-red-500" />
+              Clear Canvas
             </button>
           </div>
         </section>
@@ -246,4 +233,4 @@ export function InfoSidebar({ className }: InfoSidebarProps) {
       </div>
     </div>
   );
-}
+};

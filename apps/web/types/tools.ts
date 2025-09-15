@@ -26,10 +26,11 @@ export type ShapeType =
 interface Tool {
   id: ShapeType;
   name: string;
-  icon: any;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   shortcut: string;
   description: string;
 }
+
 export const tools: Tool[] = [
   {
     id: "select",

@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect } from "react";
 import { ShapeType } from "@/types/tools";
 
@@ -6,9 +7,11 @@ interface UseShortcutKeysProps {
   handleAddShapes: (tool: ShapeType) => void;
 }
 
-export function useShortcutKeys({ handleAddShapes }: UseShortcutKeysProps) {
+export function useShortcutKeys({
+  handleAddShapes,
+}: UseShortcutKeysProps): void {
   useEffect(() => {
-    const handleShortcutKeys = (e: KeyboardEvent) => {
+    const handleShortcutKeys = (e: KeyboardEvent): void => {
       const shortcutMap: Record<string, ShapeType> = {
         "1": "select",
         "2": "rectangle",

@@ -1,19 +1,20 @@
 import { create } from "zustand";
-import * as fabric from "fabric";
 import { toast } from "sonner";
+import type { Canvas } from "fabric";
 
 interface CanvasState {
-  canvas: fabric.Canvas | null;
-  setCanvas: (canvas: fabric.Canvas) => void;
-  clearCanvas: () => void;
+  canvas: Canvas | null;
   backgroundColor: string;
+  setCanvas: (canvas: Canvas) => void;
+  clearCanvas: () => void;
   setBackgroundColor: (color: string) => void;
 }
 
 export const useCanvasStore = create<CanvasState>((set, get) => ({
   canvas: null,
+  backgroundColor: "#ffffff",
 
-  setCanvas: (canvas) => set({ canvas }),
+  setCanvas: (canvas: Canvas) => set({ canvas }),
 
   clearCanvas: () => {
     const canvas = get().canvas;
@@ -29,9 +30,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     canvas.backgroundColor = bgColor;
     canvas.renderAll();
 
+    set({ backgroundColor: bgColor });
     toast.success("Canvas cleared successfully!");
   },
-  backgroundColor: "#ffffff",
+
   setBackgroundColor: (color: string) => {
     const canvas = get().canvas;
     if (canvas) {

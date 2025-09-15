@@ -80,12 +80,12 @@ export function useDrawShapes({
         opacity: opacity / 100,
       });
     } else {
-      // active.set({
-      //   stroke: strokeColor,
-      //   fill: fillColor,
-      //   strokeWidth,
-      //   opacity: opacity / 100,
-      // });
+      active.set({
+        stroke: strokeColor,
+        fill: fillColor,
+        strokeWidth,
+        opacity: opacity / 100,
+      });
     }
 
     active.setCoords();
@@ -118,18 +118,6 @@ export function useDrawShapes({
         const target = canvas.findTarget(opt.e as MouseEvent);
         if (target) {
           canvas.remove(target);
-
-          // @ts-ignore
-          if (ws && isConnected && roomId && target.id) {
-            ws.send(
-              JSON.stringify({
-                type: "DELETE_SHAPE",
-                roomId,
-                // @ts-ignore
-                shapeId: target.id,
-              })
-            );
-          }
         }
         return;
       }

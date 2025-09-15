@@ -1,4 +1,3 @@
-// hooks/useAuthStore.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -9,9 +8,9 @@ interface User {
 
 interface AuthState {
   user: User | null;
-  token: string | null; // ✅ store JWT
+  token: string | null;
   isLoggedIn: boolean;
-  login: (user: User, token: string) => void; // updated to accept token
+  login: (user: User, token: string) => void;
   logout: () => void;
 }
 
@@ -25,7 +24,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => set({ user: null, token: null, isLoggedIn: false }),
     }),
     {
-      name: "auth-storage", // localStorage key
+      name: "auth-storage",
     }
   )
 );

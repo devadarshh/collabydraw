@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { ThemeProvider } from "next-themes";
-import "./globals.css";
-import { Toaster } from "@/components/ui/sonner";
 import { Roboto } from "next/font/google";
+import { ThemeProvider } from "next-themes";
+
+import { Toaster } from "@/components/ui/sonner";
 import CreateRoomDialog from "@/components/room/CreateRoomDialog";
+import "./globals.css";
 
 const roboto = Roboto({
   subsets: ["latin"],
@@ -21,11 +22,11 @@ export const metadata: Metadata = {
     "Real-time collaborative whiteboard for sketching diagrams and wireframes with a hand-drawn feel.",
 };
 
-export default function RootLayout({
-  children,
-}: {
+interface RootLayoutProps {
   children: React.ReactNode;
-}) {
+}
+
+export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${roboto.variable} antialiased`}>
