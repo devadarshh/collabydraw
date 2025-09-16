@@ -1,17 +1,20 @@
 import { Request, Response } from "express";
-
 import { createRoomSchema } from "@repo/zod/schema";
 import { prisma } from "@repo/db/prisma";
 
 interface AuthRequest extends Request {
-  user?: { id: string; email: string };
+  user?: { id: string; email: string; name: string };
 }
-export const handleCreateRoom = async (req: AuthRequest, res: Response) => {
+
+export const handleCreateRoom = async (
+  req: AuthRequest,
+  res: Response
+): Promise<Response> => {
   try {
     const userId = req.user?.id;
 
     if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     const parsed = createRoomSchema.safeParse({ userId });
@@ -19,9 +22,10 @@ export const handleCreateRoom = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({
         success: false,
         message: "Validation Failed",
-        errors: parsed.error,
+        errors: parsed.error.format(),
       });
     }
+
     const newRoom = await prisma.room.create({ data: { adminId: userId } });
 
     return res.status(201).json({

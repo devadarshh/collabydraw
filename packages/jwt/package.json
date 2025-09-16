@@ -3,24 +3,15 @@
   "version": "1.0.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": {
-    ".": "./dist/config.js",
-    "./config": "./dist/config.js",
-    "./generateJWT": "./dist/generateJwtToken.js"
-  },
   "scripts": {
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "@repo/typescript-config": "workspace:*",
-    "@types/node": "^22.10.5",
     "jsonwebtoken": "^9.0.2"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "devDependencies": {
+    "@types/node": "^22.10.5",
     "@types/jsonwebtoken": "^9.0.10"
   }
 }

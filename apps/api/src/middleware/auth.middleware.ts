@@ -17,13 +17,12 @@ export function protectedRoute(
       return res.status(401).json({ message: "Token is missing" });
     }
 
-    const token = authHeader.split(" ")[1]; // token is now string | undefined
+    const token = authHeader.split(" ")[1];
 
     if (!token) {
       return res.status(401).json({ message: "Token is missing" });
     }
 
-    // ⚡ Cast to unknown first to satisfy TypeScript
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET_KEY!

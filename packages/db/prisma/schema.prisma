@@ -15,6 +15,7 @@ model User {
   image     String?
   Room      Room[]
   Shape     Shape[]
+  RoomUser  RoomUser[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -25,6 +26,7 @@ model Room {
   adminId   String
   admin     User     @relation(fields: [adminId], references: [id])
   Shape     Shape[]
+  RoomUser  RoomUser[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -32,12 +34,27 @@ model Room {
 
 model Shape {
   id        String   @id @default(uuid())
-  message   String
+  message   Json
+  version   Int      @default(1)
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
   roomId    String
-  Room      Room     @relation(fields: [roomId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([roomId])
+  @@index([userId])
+}
+
+model RoomUser {
+  id     String @id @default(cuid())
+  roomId String
+  userId String
+
+  room Room @relation(fields: [roomId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([roomId, userId])
 }
