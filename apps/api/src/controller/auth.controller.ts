@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { registerSchema, loginSchema } from "@repo/zod/schema";
-import generateJWTToken from "@repo/jwt/generateJWT";
 import { prisma } from "@repo/db/prisma";
+import generateJWTToken from "@repo/jwt/generateJWT";
 
 export const handleRegisterUser = async (req: Request, res: Response) => {
   try {

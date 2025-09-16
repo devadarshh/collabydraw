@@ -1,5 +1,5 @@
+import { jwt } from "@repo/jwt/config";
 import { NextFunction, Request, Response } from "express";
-import { jwt } from "@repo/jwt";
 
 interface AuthRequest extends Request {
   user?: { id: string; email: string; name: string };
