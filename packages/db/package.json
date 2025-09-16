@@ -9,7 +9,9 @@
     "@prisma/client": "^6.15.0",
     "@repo/typescript-config": "workspace:*"
   },
-  "scripts": {},
+  "scripts": {
+    "postinstall": "prisma generate --schema=prisma/schema.prisma"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
