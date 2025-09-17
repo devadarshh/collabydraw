@@ -118,7 +118,7 @@ const RegisterPage: React.FC = () => {
           Already have an account?{" "}
           <a
             href="/auth/signin"
-            className="text-[#605ebc] underline-offset-2 font-medium hover:underline hover:text-[#8d8bd6] cursor-pointer transition-colors"
+            className="text-[#605ebc] font-medium hover:underline hover:text-[#8d8bd6] cursor-pointer transition-colors"
           >
             Sign in
           </a>
