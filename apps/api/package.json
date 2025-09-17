@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc -b",
     "start": "node ./dist/index.js",
-    "postinstall": "ls -R ./dist"
+    "postinstall": "if [ -d dist ]; then ls -R ./dist; fi"
   },
   "dependencies": {
     "@repo/db": "workspace:*",
