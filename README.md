@@ -60,6 +60,7 @@ Follow these steps to set up and run **Collabydraw**:
 ```bash
 # Clone the repository
 git clone https://github.com/devadarshh/collabydraw.git
+
 cd collabydraw
 
 # Install dependencies
