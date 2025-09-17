@@ -139,7 +139,6 @@ const CanvasBoard: React.FC = () => {
     handleAddShapes(tool);
   };
 
-  // Hooks for canvas behavior
   useShortcutKeys({ handleAddShapes: handleShapeSelect });
   useCanvasTheme({ canvas });
   useGrabMode({ canvas, mode });

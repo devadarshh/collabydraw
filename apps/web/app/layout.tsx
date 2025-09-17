@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Roboto } from "next/font/google";
+import "./globals.css";
 import { ThemeProvider } from "next-themes";
-
 import { Toaster } from "@/components/ui/sonner";
 import CreateRoomDialog from "@/components/room/CreateRoomDialog";
-import "./globals.css";
+import localFont from "next/font/local";
 
-const roboto = Roboto({
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-roboto",
+const excalifont = localFont({
+  src: "/fonts/excalifont.woff2",
+  variable: "--font-excalifont",
+  weight: "400",
+  style: "normal",
   display: "swap",
 });
 
@@ -20,6 +20,14 @@ export const metadata: Metadata = {
   },
   description:
     "Real-time collaborative whiteboard for sketching diagrams and wireframes with a hand-drawn feel.",
+  icons: {
+    icon: [
+      { url: "/logoo.png", type: "image/png", sizes: "32x32" },
+      { url: "/logoo.png", type: "image/png", sizes: "16x16" },
+    ],
+    shortcut: "/logoo.png",
+    apple: "/logoo.png",
+  },
 };
 
 interface RootLayoutProps {
@@ -29,7 +37,9 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${roboto.variable} antialiased`}>
+      <body
+        className={`${excalifont.variable} antialiased bg-background text-foreground transition-colors duration-300`}
+      >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster position="bottom-right" />
           {children}

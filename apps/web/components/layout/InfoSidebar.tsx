@@ -79,7 +79,7 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
   return (
     <div
       className={cn(
-        "flex flex-col w-72 sm:w-80 h-screen bg-white dark:bg-[#1e1e1e] border-l border-[#605ebc33] p-6 justify-between",
+        "flex flex-col w-72 sm:w-80 h-screen bg-white dark:bg-[#1e1e1e] border-l border-[#605ebc33] p-6 justify-between text-[#111] dark:text-[#eee]",
         className
       )}
     >

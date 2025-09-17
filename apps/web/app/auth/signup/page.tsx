@@ -52,10 +52,8 @@ const RegisterPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-purple-300 via-indigo-200 to-pink-300 px-4">
       <div className="w-full max-w-md bg-white/80 dark:bg-black/70 backdrop-blur-xl rounded-3xl shadow-2xl p-12 space-y-10 transform transition-all duration-300 hover:scale-105">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-16 h-16 bg-gradient-to-r from-[#8d8bd6] to-[#605ebc] rounded-full flex items-center justify-center shadow-lg">
-            <span className="text-white font-bold text-xl">C</span>
-          </div>
+        <div className="flex flex-col items-center space-y-2">
+          <img src="/icon.png" alt="Logo" className="w-16 h-16" />
           <h1 className="text-4xl font-extrabold text-center text-[#605ebc] tracking-tight">
             Collabydraw
           </h1>
@@ -64,7 +62,7 @@ const RegisterPage: React.FC = () => {
           </p>
         </div>
 
-        <form onSubmit={handleRegisterUser} className="space-y-8">
+        <form onSubmit={handleRegisterUser} className="space-y-6">
           <div className="flex flex-col space-y-2">
             <Label htmlFor="name">Username</Label>
             <Input
@@ -120,7 +118,7 @@ const RegisterPage: React.FC = () => {
           Already have an account?{" "}
           <a
             href="/auth/signin"
-            className="text-[#605ebc] font-medium hover:underline hover:text-[#8d8bd6] cursor-pointer transition-colors"
+            className="text-[#605ebc] underline-offset-2 font-medium hover:underline hover:text-[#8d8bd6] cursor-pointer transition-colors"
           >
             Sign in
           </a>

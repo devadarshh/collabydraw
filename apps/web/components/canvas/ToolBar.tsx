@@ -22,7 +22,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   return (
     <div className="floating-toolbar">
       <TooltipProvider>
-        <div className="flex flex-nowrap justify-center items-center gap-3 w-full max-w-[700px] bg-background/95 backdrop-blur-sm rounded-lg px-2 py-1.5 shadow-xl border border-border overflow-x-auto">
+        <div
+          className="
+        flex flex-nowrap justify-center items-center gap-3 w-full max-w-[700px] 
+        bg-background/95 dark:bg-[#1e1e1e]/95 backdrop-blur-sm 
+        rounded-lg px-2 py-1.5 shadow-xl border border-border dark:border-[#444] overflow-x-auto
+      "
+        >
           {tools.map((tool) => (
             <Tooltip key={tool.id}>
               <TooltipTrigger asChild>
@@ -31,16 +37,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
                   size="sm"
                   onClick={() => onToolChange(tool.id)}
                   className={`
-                    relative w-6 h-6 sm:w-10 sm:h-10 p-0 flex items-center justify-center
-                    text-[10px] sm:text-sm cursor-pointer transition-colors
-                    hover:bg-indigo-500/20 hover:text-indigo-700
-                    ${activeTool === tool.id ? "bg-indigo-500/30 text-indigo-700" : ""}
-                  `}
+                relative w-6 h-6 sm:w-10 sm:h-10 p-0 flex items-center justify-center
+                text-[10px] sm:text-sm cursor-pointer transition-colors
+                hover:bg-indigo-500/20 dark:hover:bg-indigo-700/20 hover:text-indigo-700 dark:hover:text-indigo-200
+                ${activeTool === tool.id ? "bg-indigo-500/30 dark:bg-indigo-700/30 text-indigo-700 dark:text-indigo-200" : ""}
+              `}
                 >
                   <tool.icon className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span
-                    className="hidden sm:inline absolute -bottom-1 -right-1 text-[10px] sm:text-xs 
-                    bg-muted text-muted-foreground rounded px-1 leading-none"
+                    className="
+                  hidden sm:inline absolute -bottom-1 -right-1 text-[10px] sm:text-xs 
+                  bg-muted text-muted-foreground rounded px-1 leading-none
+                "
                   >
                     {tool.shortcut}
                   </span>

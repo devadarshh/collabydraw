@@ -1,7 +1,4 @@
-"use client";
-
 import { useEffect } from "react";
-import { useTheme } from "next-themes";
 import type { Canvas } from "fabric";
 
 interface UseCanvasThemeProps {
@@ -9,13 +6,25 @@ interface UseCanvasThemeProps {
 }
 
 export function useCanvasTheme({ canvas }: UseCanvasThemeProps): void {
-  const { resolvedTheme } = useTheme();
-
   useEffect(() => {
     if (!canvas) return;
 
-    const bgColor = resolvedTheme === "dark" ? "#121212" : "#ffffff";
-    canvas.backgroundColor = bgColor;
-    canvas.renderAll();
-  }, [canvas, resolvedTheme]);
+    const updateBackground = () => {
+      const bgColor = getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-background")
+        .trim();
+      canvas.backgroundColor = bgColor || "#ffffff";
+      canvas.renderAll();
+    };
+
+    updateBackground();
+
+    const observer = new MutationObserver(updateBackground);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, [canvas]);
 }
