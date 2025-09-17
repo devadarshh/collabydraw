@@ -22,11 +22,11 @@ export const metadata: Metadata = {
     "Real-time collaborative whiteboard for sketching diagrams and wireframes with a hand-drawn feel.",
   icons: {
     icon: [
-      { url: "/logoo.png", type: "image/png", sizes: "32x32" },
-      { url: "/logoo.png", type: "image/png", sizes: "16x16" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon.png", type: "image/png", sizes: "16x16" },
     ],
-    shortcut: "/logoo.png",
-    apple: "/logoo.png",
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
 };
 
