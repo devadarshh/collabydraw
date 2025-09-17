@@ -6,7 +6,7 @@ import CreateRoomDialog from "@/components/room/CreateRoomDialog";
 import localFont from "next/font/local";
 
 const excalifont = localFont({
-  src: "./fonts/excalifont.woff2",
+  src: "./fonts/Excalifont.woff2",
   variable: "--font-excalifont",
   weight: "400",
   style: "normal",
