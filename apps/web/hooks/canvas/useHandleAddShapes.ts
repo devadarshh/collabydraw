@@ -131,7 +131,14 @@ export const useHandleAddShapes = ({
           if (canvas.upperCanvasEl)
             canvas.upperCanvasEl.style.cursor = "crosshair";
           break;
-
+        case "triangle":
+          setMode("draw");
+          setDrawingShape("triangle");
+          canvas.selection = false;
+          resetCanvasObjects();
+          canvas.defaultCursor = "crosshair";
+          canvas.hoverCursor = "crosshair";
+          break;
         case "text":
           setMode("draw");
           setDrawingShape("text");
@@ -152,7 +159,7 @@ export const useHandleAddShapes = ({
           break;
       }
     },
-    [canvas, setActiveTool, setDrawingShape, setMode]
+    [canvas, setActiveTool, setDrawingShape, theme, setMode]
   );
 
   return handleAddShapes;

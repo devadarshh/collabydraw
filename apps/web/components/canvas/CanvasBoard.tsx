@@ -106,7 +106,7 @@ const CanvasBoard: React.FC = () => {
       "rectangle",
       "ellipse",
       "line",
-      "diamond",
+      "triangle",
       "arrow",
       "freeDraw",
       "text",

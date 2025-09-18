@@ -57,7 +57,6 @@ export function useDrawShapes({
 
   useEffect(() => {
     if (!canvas) return;
-
     canvas.isDrawingMode = mode === "freeDraw";
     if (canvas.freeDrawingBrush && mode === "freeDraw") {
       canvas.freeDrawingBrush.color = strokeColor;
@@ -102,8 +101,10 @@ export function useDrawShapes({
     textAlign,
     strokeStyle,
     textColor,
+    sendShapeToServer,
   ]);
 
+  // Drawing shapes
   useEffect(() => {
     if (!canvas) return;
 
@@ -116,9 +117,7 @@ export function useDrawShapes({
 
       if (mode === "eraser") {
         const target = canvas.findTarget(opt.e as MouseEvent);
-        if (target) {
-          canvas.remove(target);
-        }
+        if (target) canvas.remove(target);
         return;
       }
 
@@ -189,7 +188,7 @@ export function useDrawShapes({
           });
           canvas.add(arrowLine, arrowHead);
           break;
-        case "text":
+        case "text": {
           const text = new fabric.IText("Text", {
             id: crypto.randomUUID(),
             left: pointer.x,
@@ -208,15 +207,20 @@ export function useDrawShapes({
           startPoint.current = null;
           setTempShape(null);
           break;
-        case "diamond":
+        }
+        case "triangle":
           shape = new fabric.Polygon(
             [
-              { x: 0, y: 50 },
-              { x: 50, y: 0 },
-              { x: 100, y: 50 },
-              { x: 50, y: 100 },
+              { x: 0, y: 0 },
+              { x: 0, y: 0 },
+              { x: 0, y: 0 },
             ],
-            { ...commonProps, width: 0, height: 0 }
+            {
+              ...commonProps,
+              selectable: true,
+              evented: true,
+              perPixelTargetFind: true,
+            }
           );
           break;
       }
@@ -271,15 +275,25 @@ export function useDrawShapes({
             90,
         });
       } else if (
-        drawingShape === "diamond" &&
+        drawingShape === "triangle" &&
         tempShape instanceof fabric.Polygon
       ) {
-        tempShape.set({
-          width: Math.abs(pointer.x - x),
-          height: Math.abs(pointer.y - y),
-          left: Math.min(pointer.x, x),
-          top: Math.min(pointer.y, y),
-        });
+        const width = pointer.x - x;
+        const height = pointer.y - y;
+        const left = width >= 0 ? x : pointer.x;
+        const top = height >= 0 ? y : pointer.y;
+        if (tempShape) {
+          tempShape.set({
+            points: [
+              { x: width / 2, y: 0 },
+              { x: 0, y: height },
+              { x: width, y: height },
+            ],
+            left,
+            top,
+          });
+          tempShape.setCoords();
+        }
       }
 
       canvas.renderAll();
@@ -293,8 +307,7 @@ export function useDrawShapes({
           id: crypto.randomUUID(),
           selectable: false,
           evented: true,
-          //@ts-ignore
-        } as fabric.IGroupOptions & { id: string });
+        } as any & { id: string });
         canvas.remove(arrowLine, arrowHead);
         canvas.add(arrowGroup);
         sendShapeToServer(arrowGroup);
@@ -334,9 +347,6 @@ export function useDrawShapes({
     drawingShape,
     mode,
     tempShape,
-    ws,
-    isConnected,
-    roomId,
     strokeColor,
     fillColor,
     strokeWidth,
@@ -346,5 +356,8 @@ export function useDrawShapes({
     textAlign,
     strokeStyle,
     textColor,
+    sendShapeToServer,
+    startPoint,
+    setTempShape,
   ]);
 }

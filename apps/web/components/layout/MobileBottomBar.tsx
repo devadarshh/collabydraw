@@ -34,7 +34,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
     "rectangle",
     "ellipse",
     "line",
-    "diamond",
+    "triangle",
     "arrow",
     "freeDraw",
     "text",

@@ -60,7 +60,7 @@ export function PropertiesPanel({
   const isShapeTool = [
     "rectangle",
     "ellipse",
-    "diamond",
+    "triangle",
     "line",
     "arrow",
     "freeDraw",

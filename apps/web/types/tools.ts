@@ -2,20 +2,20 @@ import {
   MousePointer2,
   Square,
   Circle,
-  Diamond,
   Minus,
   Type,
   Pen,
   Eraser,
   Hand,
   ArrowRight,
+  Triangle,
 } from "lucide-react";
 
 export type ShapeType =
   | "select"
   | "rectangle"
   | "ellipse"
-  | "diamond"
+  | "triangle"
   | "line"
   | "freeDraw"
   | "arrow"
@@ -54,11 +54,11 @@ export const tools: Tool[] = [
     description: "Ellipse (3)",
   },
   {
-    id: "diamond",
-    name: "Diamond",
-    icon: Diamond,
+    id: "triangle",
+    name: "triangle",
+    icon: Triangle,
     shortcut: "4",
-    description: "Diamond (4)",
+    description: "Triangle (4)",
   },
   {
     id: "line",

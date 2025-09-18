@@ -16,7 +16,7 @@ export function useShortcutKeys({
         "1": "select",
         "2": "rectangle",
         "3": "ellipse",
-        "4": "diamond",
+        "4": "triangle",
         "5": "line",
         "6": "freeDraw",
         "7": "arrow",
