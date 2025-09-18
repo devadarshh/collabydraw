@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import * as fabric from "fabric";
+import { useTheme } from "next-themes";
 import { ShapeType } from "@/types/tools";
 
 interface UseHandleAddShapesProps {
@@ -21,6 +22,7 @@ export const useHandleAddShapes = ({
   setDrawingShape,
   setActiveTool,
 }: UseHandleAddShapesProps): ((type: ShapeType) => void) => {
+  const { theme } = useTheme();
   const handleAddShapes = useCallback(
     (type: ShapeType) => {
       setActiveTool(type);
@@ -47,18 +49,65 @@ export const useHandleAddShapes = ({
           canvas.defaultCursor = "default";
           canvas.hoverCursor = "move";
           break;
+        case "eraser": {
+          if (!canvas) return;
 
-        case "eraser":
           setMode("eraser");
           setDrawingShape("eraser");
+
           canvas.isDrawingMode = false;
           canvas.selection = false;
-          canvas.forEachObject((obj) => {
-            obj.evented = true;
-            obj.selectable = false;
-          });
-          canvas.defaultCursor = "not-allowed";
+
+          function setEraserCursor(size: number) {
+            if (!canvas) return;
+            const radius = size / 2;
+            const cursorCanvas = document.createElement("canvas");
+            cursorCanvas.width = size * 2;
+            cursorCanvas.height = size * 2;
+
+            const ctx = cursorCanvas.getContext("2d")!;
+            ctx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+
+            ctx.beginPath();
+            ctx.arc(radius, radius, radius - 1, 0, Math.PI * 2);
+
+            const strokeColor = theme === "dark" ? "white" : "black";
+            const shadowColor = theme === "dark" ? "black" : "white";
+
+            ctx.strokeStyle = strokeColor;
+            ctx.lineWidth = 2;
+            ctx.shadowColor = shadowColor;
+            ctx.shadowBlur = 4;
+            ctx.stroke();
+
+            const cursorUrl = cursorCanvas.toDataURL("image/png");
+            const cursorStyle = `url(${cursorUrl}) ${radius} ${radius}, auto`;
+
+            canvas.defaultCursor = cursorStyle;
+            canvas.hoverCursor = cursorStyle;
+
+            canvas.forEachObject((obj) => {
+              obj.selectable = false;
+              obj.evented = true;
+              obj.hoverCursor = cursorStyle;
+            });
+          }
+
+          setEraserCursor(16);
+
+          const eraseHandler = (opt: any) => {
+            const target = opt.target;
+            if (target) {
+              canvas.remove(target);
+              canvas.requestRenderAll();
+            }
+          };
+
+          canvas.off("mouse:down");
+          canvas.on("mouse:down", eraseHandler);
+
           break;
+        }
 
         case "grab":
           setMode("grab");
