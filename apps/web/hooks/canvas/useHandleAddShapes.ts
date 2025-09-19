@@ -27,6 +27,7 @@ export const useHandleAddShapes = ({
     (type: ShapeType) => {
       setActiveTool(type);
       if (!canvas) return;
+      canvas.off("mouse:down");
 
       const resetCanvasObjects = (): void => {
         canvas.forEachObject((obj) => {
@@ -45,6 +46,7 @@ export const useHandleAddShapes = ({
             obj.selectable = true;
             obj.evented = true;
             obj.lockRotation = false;
+            obj.hoverCursor = "move";
           });
           canvas.defaultCursor = "default";
           canvas.hoverCursor = "move";

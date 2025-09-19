@@ -20,6 +20,7 @@ import { CanvasSidebar } from "./CanvasSideBar";
 
 import { applyFabricConfig } from "@/config/fabricConfig";
 import { ShapeType } from "@/types/tools";
+import { useDeleteListener } from "@/hooks/canvas/useDeleteListener";
 
 const CanvasBoard: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -151,6 +152,7 @@ const CanvasBoard: React.FC = () => {
     startPoint,
   });
   useCanvasZoom(canvas, setZoom);
+  useDeleteListener(canvas);
   useWebSocketManager();
 
   return (
@@ -158,7 +160,6 @@ const CanvasBoard: React.FC = () => {
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] sm:w-auto max-w-lg flex justify-center px-2 sm:px-0 cursor-pointer">
         <Toolbar activeTool={activeTool} onToolChange={handleShapeSelect} />
       </div>
-
       <CanvasSidebar
         showPropertiesPanel={showPropertiesPanel}
         setShowPropertiesPanel={setShowPropertiesPanel}
@@ -169,8 +170,8 @@ const CanvasBoard: React.FC = () => {
         zoom={zoom}
         setZoom={setZoom}
       />
-
       <canvas ref={canvasRef} className="w-full h-full" />
+      addDeleteListner(canvas)
     </div>
   );
 };
