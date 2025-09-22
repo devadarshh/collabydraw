@@ -69,10 +69,11 @@ export function useDrawShapes({
     const active = canvas.getActiveObject();
     if (!active) return;
 
-    if (active.type === "i-text") {
+    if (active.type === "i-text" || active.type === "textbox") {
       const textObj = active as fabric.IText;
       textObj.set({
-        fill: textColor,
+        fill: fillColor,
+        stroke: fillColor,
         fontFamily,
         fontSize,
         textAlign,
@@ -189,14 +190,16 @@ export function useDrawShapes({
           canvas.add(arrowLine, arrowHead);
           break;
         case "text": {
-          const text = new fabric.IText("Text", {
+          const text = new fabric.Textbox("Hii", {
             id: crypto.randomUUID(),
             left: pointer.x,
             top: pointer.y,
             fontFamily,
             fontSize,
-            fill: textColor,
-            textAlign,
+            fill: fillColor,
+            stroke: fillColor,
+            strokeWidth: 1,
+            textAlign: textAlign,
             opacity: opacity / 100,
             editable: true,
           });

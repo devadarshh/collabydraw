@@ -152,7 +152,9 @@ const CanvasBoard: React.FC = () => {
     startPoint,
   });
   useCanvasZoom(canvas, setZoom);
-  useDeleteListener(canvas);
+
+  useDeleteListener(canvas, selectedTool);
+
   useWebSocketManager();
 
   return (

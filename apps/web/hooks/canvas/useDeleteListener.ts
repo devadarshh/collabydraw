@@ -1,9 +1,13 @@
 import { useEffect } from "react";
 import * as fabric from "fabric";
 
-export function useDeleteListener(canvas: fabric.Canvas | null): void {
+export function useDeleteListener(
+  canvas: fabric.Canvas | null,
+  selectedTool: string
+): void {
   useEffect(() => {
     if (!canvas) return;
+    if (selectedTool == "text") return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Delete" || e.key === "Backspace") {
         const activeObjects: fabric.Object[] = canvas.getActiveObjects();
@@ -21,5 +25,5 @@ export function useDeleteListener(canvas: fabric.Canvas | null): void {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [canvas]);
+  }, [canvas,selectedTool]);
 }

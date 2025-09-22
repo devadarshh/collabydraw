@@ -4,6 +4,8 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import CreateRoomDialog from "@/components/room/CreateRoomDialog";
 import localFont from "next/font/local";
+import { Inter } from "next/font/google";
+import { NextFontWithVariable } from "next/dist/compiled/@next/font";
 
 const excalifont = localFont({
   src: "./fonts/Excalifont.woff2",

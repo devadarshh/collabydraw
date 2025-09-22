@@ -113,7 +113,7 @@ export function PropertiesPanel({
         )}
       </div>
 
-      {(isShapeTool || isTextTool) && (
+      {isShapeTool && (
         <section>
           <h3 className="text-xs font-semibold text-[#605ebc] mb-1">Stroke</h3>
           <div className="grid grid-cols-6 gap-1 mb-2">
@@ -166,7 +166,7 @@ export function PropertiesPanel({
       )}
 
       {(isShapeTool || isTextTool) &&
-        !["line", "freeDraw", "arrow", "text"].includes(selectedTool) && (
+        !["line", "freeDraw", "arrow"].includes(selectedTool) && (
           <section>
             <h3 className="text-xs font-semibold text-[#605ebc] mb-1">Fill</h3>
             <div className="grid grid-cols-6 gap-1">
@@ -237,7 +237,7 @@ export function PropertiesPanel({
         <section>
           <h3 className="text-xs font-semibold text-[#605ebc] mb-1">Text</h3>
 
-          <div className="flex gap-1 mb-2">
+          {/* <div className="flex gap-1 mb-2">
             {fontFamilies.map((family) => (
               <button
                 key={family}
@@ -252,7 +252,7 @@ export function PropertiesPanel({
                 {family}
               </button>
             ))}
-          </div>
+          </div> */}
 
           <div className="flex gap-1 mb-2">
             {fontSizes.map((size) => (
