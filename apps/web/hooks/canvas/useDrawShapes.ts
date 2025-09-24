@@ -105,7 +105,6 @@ export function useDrawShapes({
     sendShapeToServer,
   ]);
 
-  // Drawing shapes
   useEffect(() => {
     if (!canvas) return;
 
@@ -190,11 +189,10 @@ export function useDrawShapes({
           canvas.add(arrowLine, arrowHead);
           break;
         case "text": {
-          const text = new fabric.Textbox("Hii", {
+          const text = new fabric.Textbox("", {
             id: crypto.randomUUID(),
             left: pointer.x,
             top: pointer.y,
-            fontFamily,
             fontSize,
             fill: fillColor,
             stroke: fillColor,

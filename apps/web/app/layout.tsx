@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeProvider } from "next-themes";
+
 import { Toaster } from "@/components/ui/sonner";
 import CreateRoomDialog from "@/components/room/CreateRoomDialog";
 import localFont from "next/font/local";
+import { ThemeProvider } from "@/components/ui/ThemeProvider";
 
 const excalifont = localFont({
   src: "./fonts/Excalifont.woff2",
@@ -40,7 +41,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body
         className={`${excalifont.variable} antialiased bg-background text-foreground transition-colors duration-300`}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider
+          attribute={"class"}
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <Toaster position="bottom-right" />
           {children}
           <CreateRoomDialog />
