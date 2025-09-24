@@ -1,6 +1,6 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { prisma } from "@repo/db/prisma";
-import { jwt } from "@repo/jwt";
+import { jwt } from "@repo/jwt/config";
 import dotenv from "dotenv";
 dotenv.config();
 

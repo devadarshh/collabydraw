@@ -48,14 +48,14 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
 
           <div className="flex flex-col items-center p-3 bg-white/20 backdrop-blur-sm rounded-lg shadow-sm">
             <Settings size={24} className="text-[#8d8bd6]" />
-            <span className="mt-2 text-sm font-semibold text-[#8d8bd6] text-center whitespace-nowrap">
-              Settings → Collaboration
+            <span className="mt-2 text-sm font-semibold text-[#8d8bd6] text-center ">
+              Settings→ Collaboration
             </span>
           </div>
 
           <div className="flex flex-col items-center p-3 bg-white/20 backdrop-blur-sm rounded-lg shadow-sm">
-            <Circle size={24} className="text-[#8d8bd6]" />
-            <span className="mt-2 text-sm font-semibold text-[#8d8bd6] text-center">
+            <Circle size={24} className="text-[#8d8bd6] mt-2" />
+            <span className="mt-2 text-sm font-semibold text-[#8d8bd6] text-center whitespace-normal">
               Instant & Local
             </span>
           </div>
