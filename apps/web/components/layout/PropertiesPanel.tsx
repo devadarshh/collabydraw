@@ -26,7 +26,6 @@ const colorSwatches = [
 ];
 
 const strokeWidths = [1, 2, 3, 4, 5, 8];
-const fontFamilies = ["Inter", "Serif", "Mono"] as const;
 const fontSizes = [12, 16, 24, 36];
 const textAlignments = ["left", "center", "right"] as const;
 
@@ -40,7 +39,6 @@ export function PropertiesPanel({
     fillColor,
     strokeWidth,
     opacity,
-    fontFamily,
     fontSize,
     textAlign,
     strokeStyle,
@@ -48,7 +46,6 @@ export function PropertiesPanel({
     setFillColor,
     setStrokeWidth,
     setOpacity,
-    setFontFamily,
     setFontSize,
     setTextAlign,
     setStrokeStyle,
@@ -194,65 +191,50 @@ export function PropertiesPanel({
           </section>
         )}
 
-      {isShapeTool && selectedTool !== "freeDraw" && (
-        <section>
-          <h4 className="text-[11px] font-semibold text-[#605ebc] mb-1">
-            Stroke Style
-          </h4>
-          <div className="flex gap-1">
-            {[
-              { key: "solid", dash: "" },
-              { key: "dashed", dash: "6,4" },
-              { key: "dotted", dash: "2,4" },
-            ].map(({ key, dash }) => (
-              <button
-                key={key}
-                onClick={() => setStrokeStyle(key as any)}
-                className={cn(
-                  "flex-1 h-7 rounded border flex items-center justify-center cursor-pointer",
-                  strokeStyle === key
-                    ? "bg-[#605ebc] text-white border-[#605ebc]"
-                    : "border-[#605ebc33] hover:bg-[#8d8bd622]"
-                )}
-              >
-                <svg width="28" height="12" viewBox="0 0 28 12">
-                  <line
-                    x1="2"
-                    y1="6"
-                    x2="26"
-                    y2="6"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeDasharray={dash}
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </button>
-            ))}
-          </div>
-        </section>
-      )}
+      {isShapeTool &&
+        selectedTool !== "freeDraw" &&
+        selectedTool !== "arrow" && (
+          <section>
+            <h4 className="text-[11px] font-semibold text-[#605ebc] mb-1">
+              Stroke Style
+            </h4>
+            <div className="flex gap-1">
+              {[
+                { key: "solid", dash: "" },
+                { key: "dashed", dash: "6,4" },
+                { key: "dotted", dash: "2,4" },
+              ].map(({ key, dash }) => (
+                <button
+                  key={key}
+                  onClick={() => setStrokeStyle(key as any)}
+                  className={cn(
+                    "flex-1 h-7 rounded border flex items-center justify-center cursor-pointer",
+                    strokeStyle === key
+                      ? "bg-[#605ebc] text-white border-[#605ebc]"
+                      : "border-[#605ebc33] hover:bg-[#8d8bd622]"
+                  )}
+                >
+                  <svg width="28" height="12" viewBox="0 0 28 12">
+                    <line
+                      x1="2"
+                      y1="6"
+                      x2="26"
+                      y2="6"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeDasharray={dash}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
 
       {isTextTool && (
         <section>
           <h3 className="text-xs font-semibold text-[#605ebc] mb-1">Text</h3>
-
-          {/* <div className="flex gap-1 mb-2">
-            {fontFamilies.map((family) => (
-              <button
-                key={family}
-                onClick={() => setFontFamily(family)}
-                className={cn(
-                  "flex-1 h-7 rounded border text-[11px] font-medium cursor-pointer",
-                  fontFamily === family
-                    ? "bg-[#605ebc] text-white border-[#605ebc]"
-                    : "border-[#605ebc33] hover:bg-[#8d8bd622]"
-                )}
-              >
-                {family}
-              </button>
-            ))}
-          </div> */}
 
           <div className="flex gap-1 mb-2">
             {fontSizes.map((size) => (
@@ -293,7 +275,7 @@ export function PropertiesPanel({
       )}
 
       {(isShapeTool || isTextTool) &&
-        !["line", "freeDraw"].includes(selectedTool) && (
+        !["line", "freeDraw", "arrow"].includes(selectedTool) && (
           <section>
             <h3 className="font-semibold text-gray-400 mb-1 text-[11px]">
               Style
