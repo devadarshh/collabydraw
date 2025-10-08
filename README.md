@@ -3,7 +3,6 @@
 Collabydraw is a modern **real-time collaborative whiteboard** designed for **teamwork, brainstorming, and diagram sketching**. With a **hand-drawn feel** powered by Fabric.js, it’s perfect for remote teams to visualize ideas together.
 
 **🌐 Live Demo:** [Access Collabydraw](https://collabydraw-web.vercel.app/)  
-**🎬 Project Walkthrough:** [Watch on YouTube](https://youtube.com/your-video-link)
 
 ## ✅ Core Features
 
