@@ -16,6 +16,47 @@ interface UseHandleAddShapesProps {
   setActiveTool: React.Dispatch<React.SetStateAction<ShapeType>>;
 }
 
+function setEraserCursor(
+  canvas: fabric.Canvas,
+  theme: string | undefined,
+  size: number
+) {
+  try {
+    const radius = size / 2;
+    const cursorCanvas = document.createElement("canvas");
+    cursorCanvas.width = size * 2;
+    cursorCanvas.height = size * 2;
+
+    const ctx = cursorCanvas.getContext("2d");
+    if (!ctx) throw new Error("Could not get 2d context");
+
+    ctx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
+    ctx.beginPath();
+    ctx.arc(radius, radius, radius - 1, 0, Math.PI * 2);
+
+    const strokeColor = theme === "dark" ? "white" : "black";
+    const shadowColor = theme === "dark" ? "black" : "white";
+
+    ctx.strokeStyle = strokeColor;
+    ctx.lineWidth = 2;
+    ctx.shadowColor = shadowColor;
+    ctx.shadowBlur = 4;
+    ctx.stroke();
+
+    const cursorUrl = cursorCanvas.toDataURL("image/png");
+    const cursorStyle = `url(${cursorUrl}) ${radius} ${radius}, auto`;
+
+    canvas.defaultCursor = cursorStyle;
+    canvas.hoverCursor = cursorStyle;
+    canvas.forEachObject((obj) => {
+      obj.hoverCursor = cursorStyle;
+    });
+  } catch {
+    canvas.defaultCursor = "crosshair";
+    canvas.hoverCursor = "crosshair";
+  }
+}
+
 export const useHandleAddShapes = ({
   canvas,
   setMode,
@@ -23,11 +64,11 @@ export const useHandleAddShapes = ({
   setActiveTool,
 }: UseHandleAddShapesProps): ((type: ShapeType) => void) => {
   const { theme } = useTheme();
+
   const handleAddShapes = useCallback(
     (type: ShapeType) => {
       setActiveTool(type);
       if (!canvas) return;
-      canvas.off("mouse:down");
 
       const resetCanvasObjects = (): void => {
         canvas.forEachObject((obj) => {
@@ -51,65 +92,18 @@ export const useHandleAddShapes = ({
           canvas.defaultCursor = "default";
           canvas.hoverCursor = "move";
           break;
-        case "eraser": {
-          if (!canvas) return;
 
+        case "eraser":
           setMode("eraser");
           setDrawingShape("eraser");
-
           canvas.isDrawingMode = false;
           canvas.selection = false;
-
-          function setEraserCursor(size: number) {
-            if (!canvas) return;
-            const radius = size / 2;
-            const cursorCanvas = document.createElement("canvas");
-            cursorCanvas.width = size * 2;
-            cursorCanvas.height = size * 2;
-
-            const ctx = cursorCanvas.getContext("2d")!;
-            ctx.clearRect(0, 0, cursorCanvas.width, cursorCanvas.height);
-
-            ctx.beginPath();
-            ctx.arc(radius, radius, radius - 1, 0, Math.PI * 2);
-
-            const strokeColor = theme === "dark" ? "white" : "black";
-            const shadowColor = theme === "dark" ? "black" : "white";
-
-            ctx.strokeStyle = strokeColor;
-            ctx.lineWidth = 2;
-            ctx.shadowColor = shadowColor;
-            ctx.shadowBlur = 4;
-            ctx.stroke();
-
-            const cursorUrl = cursorCanvas.toDataURL("image/png");
-            const cursorStyle = `url(${cursorUrl}) ${radius} ${radius}, auto`;
-
-            canvas.defaultCursor = cursorStyle;
-            canvas.hoverCursor = cursorStyle;
-
-            canvas.forEachObject((obj) => {
-              obj.selectable = false;
-              obj.evented = true;
-              obj.hoverCursor = cursorStyle;
-            });
-          }
-
-          setEraserCursor(16);
-
-          const eraseHandler = (opt: any) => {
-            const target = opt.target;
-            if (target) {
-              canvas.remove(target);
-              canvas.requestRenderAll();
-            }
-          };
-
-          canvas.off("mouse:down");
-          canvas.on("mouse:down", eraseHandler);
-
+          canvas.forEachObject((obj) => {
+            obj.selectable = false;
+            obj.evented = true;
+          });
+          setEraserCursor(canvas, theme, 16);
           break;
-        }
 
         case "grab":
           setMode("grab");
@@ -130,17 +124,21 @@ export const useHandleAddShapes = ({
           canvas.freeDrawingBrush.width = 3;
           canvas.freeDrawingBrush.color = "blue";
           resetCanvasObjects();
-          if (canvas.upperCanvasEl)
+          if (canvas.upperCanvasEl) {
             canvas.upperCanvasEl.style.cursor = "crosshair";
+          }
           break;
+
         case "triangle":
           setMode("draw");
           setDrawingShape("triangle");
+          canvas.isDrawingMode = false;
           canvas.selection = false;
           resetCanvasObjects();
           canvas.defaultCursor = "crosshair";
           canvas.hoverCursor = "crosshair";
           break;
+
         case "text":
           setMode("draw");
           setDrawingShape("text");
@@ -154,6 +152,7 @@ export const useHandleAddShapes = ({
         default:
           setMode("draw");
           setDrawingShape(type);
+          canvas.isDrawingMode = false;
           canvas.selection = false;
           resetCanvasObjects();
           canvas.defaultCursor = "crosshair";

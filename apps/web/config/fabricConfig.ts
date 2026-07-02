@@ -1,9 +1,11 @@
-import * as fabric from "fabric";
+import { FabricObject, Textbox, type Canvas } from "fabric";
+
+FabricObject.customProperties = ["id"];
 
 /**
  * @param canvas
  */
-export const applyFabricConfig = (canvas: fabric.Canvas) => {
+export const applyFabricConfig = (canvas: Canvas) => {
   const getCssVar = (name: string, fallback: string) =>
     getComputedStyle(document.documentElement).getPropertyValue(name).trim() ||
     fallback;
@@ -17,17 +19,17 @@ export const applyFabricConfig = (canvas: fabric.Canvas) => {
   canvas.selectionLineWidth = 1.5;
   canvas.selectionDashArray = [5, 3];
 
-  fabric.Object.prototype.borderColor = primaryColor;
-  fabric.Object.prototype.borderDashArray = [4, 2];
-  fabric.Object.prototype.cornerColor = foregroundColor;
-  fabric.Object.prototype.cornerStrokeColor = primaryColor;
-  fabric.Object.prototype.cornerStyle = "circle";
-  fabric.Object.prototype.cornerSize = 10;
-  fabric.Object.prototype.transparentCorners = false;
-  fabric.Object.prototype.padding = 5;
-  fabric.Object.prototype.lockRotation = false;
+  FabricObject.prototype.borderColor = primaryColor;
+  FabricObject.prototype.borderDashArray = [4, 2];
+  FabricObject.prototype.cornerColor = foregroundColor;
+  FabricObject.prototype.cornerStrokeColor = primaryColor;
+  FabricObject.prototype.cornerStyle = "circle";
+  FabricObject.prototype.cornerSize = 10;
+  FabricObject.prototype.transparentCorners = false;
+  FabricObject.prototype.padding = 5;
+  FabricObject.prototype.lockRotation = false;
 
-  fabric.Text.prototype.fontFamily = "Excalifont";
+  Textbox.prototype.fontFamily = "Excalifont";
 
   canvas.requestRenderAll();
 };

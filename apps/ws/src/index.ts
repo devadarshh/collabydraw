@@ -1,25 +1,18 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { prisma } from "@repo/db/prisma";
 import { jwt } from "@repo/jwt/config";
+import {
+  type ClientMessage,
+  type Participant,
+  parseShapeMessage,
+} from "@repo/zod/ws-messages";
 import dotenv from "dotenv";
-dotenv.config();
+import path from "path";
+
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 const PORT = process.env.WS_PORT || 8080;
 const wss = new WebSocketServer({ port: Number(PORT) });
-
-// ------------------- TYPES -------------------
-type ShapeData = {
-  id: string;
-  type: string; // rectangle, ellipse, line, freeDraw, etc
-  x: number;
-  y: number;
-  width?: number;
-  height?: number;
-  color?: string;
-  strokeWidth?: number;
-  points?: { x: number; y: number }[];
-  text?: string;
-};
 
 type User = {
   userId: string;
@@ -35,25 +28,6 @@ type Room = {
   createdAt: number;
 };
 
-type ClientMessage =
-  | { type: "JOIN_ROOM"; roomId: string }
-  | { type: "LEAVE_ROOM"; roomId: string }
-  | { type: "CREATE_SHAPE"; roomId: string; shape: ShapeData }
-  | { type: "DELETE_SHAPE"; roomId: string; shapeId: string };
-
-type ServerMessage =
-  | { type: "ROOM_JOINED"; roomId: string; message: string }
-  | { type: "ROOM_LEAVED"; roomId: string; message: string }
-  | {
-      type: "USER_LEFT";
-      userId: string;
-      userName: string;
-      participants: { userId: string; userName: string }[];
-    }
-  | { type: "NEW_SHAPE"; shape: ShapeData }
-  | { type: "LOAD_SHAPES"; shapes: ShapeData[] }
-  | { type: "ERROR"; message: string };
-
 let users: User[] = [];
 let rooms: Room[] = [];
 
@@ -68,13 +42,10 @@ interface JwtPayload {
   name: string;
 }
 
-// ------------------- AUTH -------------------
 function authUser(token: string) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET_KEY) as JwtPayload;
-
     if (!decoded.id) return null;
-
     return {
       userId: decoded.id,
       userName: decoded.name ?? "Anonymous",
@@ -86,14 +57,50 @@ function authUser(token: string) {
   }
 }
 
-// ------------------- UTILS -------------------
-function getCurrentParticipantsInRoom(roomId: string) {
+function getCurrentParticipantsInRoom(roomId: string): Participant[] {
   const room = rooms.find((r) => r.roomId === roomId);
   if (!room) return [];
   return room.users.map((u) => ({ userId: u.userId, userName: u.userName }));
 }
 
-// ------------------- WEBSOCKET CONNECTION -------------------
+function broadcastToRoom(
+  roomId: string,
+  message: unknown,
+  excludeUserId?: string
+) {
+  const room = rooms.find((r) => r.roomId === roomId);
+  if (!room) return;
+  const payload = JSON.stringify(message);
+  room.users.forEach((u) => {
+    if (excludeUserId && u.userId === excludeUserId) return;
+    u.ws.send(payload);
+  });
+}
+
+function removeUserFromRoom(user: User, connectionRoomId: string) {
+  const room = rooms.find((r) => r.roomId === connectionRoomId);
+  if (!room) return;
+
+  room.users = room.users.filter((u) => u.userId !== user.userId);
+  user.roomId = null;
+
+  if (room.admin === user.userId && room.users.length > 0) {
+    room.admin = room.users[0]!.userId;
+  } else if (room.users.length === 0) {
+    rooms = rooms.filter((r) => r.roomId !== room.roomId);
+    console.log(`Room ${connectionRoomId} deleted (empty)`);
+    return;
+  }
+
+  const participants = getCurrentParticipantsInRoom(connectionRoomId);
+  broadcastToRoom(connectionRoomId, {
+    type: "USER_LEFT",
+    userId: user.userId,
+    userName: user.userName,
+    participants,
+  });
+}
+
 wss.on("connection", (ws, req) => {
   ws.send("SUBSCRIBED");
 
@@ -102,9 +109,9 @@ wss.on("connection", (ws, req) => {
 
   const queryParams = new URLSearchParams(url.split("?")[1]);
   const token = queryParams.get("token");
-  const roomId = queryParams.get("room");
+  const connectionRoomId = queryParams.get("room");
 
-  if (!token || !roomId) return ws.close();
+  if (!token || !connectionRoomId) return ws.close();
 
   const userData = authUser(token);
   if (!userData) return ws.close(1008, "User not authenticated");
@@ -118,12 +125,26 @@ wss.on("connection", (ws, req) => {
   users.push(user);
 
   ws.on("message", async (data) => {
-    const parsedData: ClientMessage = JSON.parse(data.toString());
+    let parsedData: ClientMessage;
+    try {
+      parsedData = JSON.parse(data.toString()) as ClientMessage;
+    } catch {
+      ws.send(
+        JSON.stringify({ type: "ERROR", message: "Invalid message format" })
+      );
+      return;
+    }
 
-    // ------------------- JOIN ROOM -------------------
     if (parsedData.type === "JOIN_ROOM") {
+      if (parsedData.roomId !== connectionRoomId) {
+        ws.send(
+          JSON.stringify({ type: "ERROR", message: "Room ID mismatch" })
+        );
+        return;
+      }
+
       const isRoomExist = await prisma.room.findUnique({
-        where: { id: roomId },
+        where: { id: connectionRoomId },
       });
       if (!isRoomExist) {
         ws.send(
@@ -132,116 +153,151 @@ wss.on("connection", (ws, req) => {
         return;
       }
 
-      let room = rooms.find((r) => r.roomId === roomId);
+      let room = rooms.find((r) => r.roomId === connectionRoomId);
+      const isNewJoiner = !room?.users.some((u) => u.userId === user.userId);
+
       if (!room) {
-        room = { roomId, users: [], admin: user.userId, createdAt: Date.now() };
+        room = {
+          roomId: connectionRoomId,
+          users: [],
+          admin: user.userId,
+          createdAt: Date.now(),
+        };
         rooms.push(room);
-        console.log(`${user.userName} is admin of new room ${roomId}`);
+        console.log(`${user.userName} is admin of new room ${connectionRoomId}`);
       }
 
       if (!room.users.some((u) => u.userId === user.userId)) {
         room.users.push(user);
-        user.roomId = roomId;
+        user.roomId = connectionRoomId;
       }
 
       ws.send(
         JSON.stringify({
           type: "ROOM_JOINED",
-          roomId,
+          roomId: connectionRoomId,
           message: "Room Joined Successfully",
         })
       );
 
-      // ------------------- LOAD EXISTING SHAPES -------------------
-      const existingShapes = await prisma.shape.findMany({ where: { roomId } });
+      const existingShapes = await prisma.shape.findMany({
+        where: { roomId: connectionRoomId },
+      });
       ws.send(
         JSON.stringify({
           type: "LOAD_SHAPES",
-          shapes: existingShapes.map((s) => JSON.parse(s.message)),
+          shapes: existingShapes.map((s) => parseShapeMessage(s.message)),
         })
       );
 
-      console.log(`${user.userName} joined room ${roomId}`);
+      if (isNewJoiner) {
+        broadcastToRoom(
+          connectionRoomId,
+          {
+            type: "USER_JOINED",
+            userId: user.userId,
+            userName: user.userName,
+            participants: getCurrentParticipantsInRoom(connectionRoomId),
+          },
+          user.userId
+        );
+      }
+
+      console.log(`${user.userName} joined room ${connectionRoomId}`);
+      return;
     }
 
-    // ------------------- LEAVE ROOM -------------------
     if (parsedData.type === "LEAVE_ROOM") {
-      const room = rooms.find((r) => r.roomId === roomId);
-      if (!room) return; // runtime guard
-
-      room.users = room!.users.filter((u) => u.userId !== user.userId);
-      user.roomId = null;
-
-      if (room!.admin === user.userId && room!.users.length > 0) {
-        // @ts-ignore
-        room!.admin = room!.users[0].userId;
-      } else if (room!.users.length === 0) {
-        rooms = rooms.filter((r) => r.roomId !== room!.roomId);
-        console.log(`Room ${roomId} deleted (empty)`);
+      if (parsedData.roomId !== connectionRoomId) {
+        ws.send(
+          JSON.stringify({ type: "ERROR", message: "Room ID mismatch" })
+        );
+        return;
       }
+
+      removeUserFromRoom(user, connectionRoomId);
 
       ws.send(
         JSON.stringify({
           type: "ROOM_LEAVED",
-          roomId,
+          roomId: connectionRoomId,
           message: "Room Left Successfully",
         })
       );
 
-      const participants = getCurrentParticipantsInRoom(roomId);
-      room.users.forEach((u) =>
-        u.ws.send(
-          JSON.stringify({
-            type: "USER_LEFT",
-            userId: user.userId,
-            userName: user.userName,
-            participants,
-          })
-        )
-      );
-
-      console.log(`${user.userName} left room ${roomId}`);
+      console.log(`${user.userName} left room ${connectionRoomId}`);
+      return;
     }
 
-    // ------------------- CREATE SHAPE -------------------
     if (parsedData.type === "CREATE_SHAPE") {
-      const { roomId, shape } = parsedData;
+      if (parsedData.roomId !== connectionRoomId) {
+        ws.send(
+          JSON.stringify({ type: "ERROR", message: "Room ID mismatch" })
+        );
+        return;
+      }
+      if (!user.roomId || user.roomId !== connectionRoomId) {
+        ws.send(
+          JSON.stringify({ type: "ERROR", message: "Join the room first" })
+        );
+        return;
+      }
 
-      // Save in DB
-      await prisma.shape.create({
-        data: {
+      const { shape } = parsedData;
+      if (!shape?.id) {
+        ws.send(
+          JSON.stringify({ type: "ERROR", message: "Shape must have an id" })
+        );
+        return;
+      }
+
+      await prisma.shape.upsert({
+        where: { id: shape.id },
+        update: { message: shape as object },
+        create: {
           id: shape.id,
-          message: JSON.stringify(shape),
-          roomId,
+          message: shape as object,
+          roomId: connectionRoomId,
           userId: user.userId,
         },
       });
 
-      // Broadcast to all users in room
-      const room = rooms.find((r) => r.roomId === roomId);
-      if (!room) return;
+      broadcastToRoom(connectionRoomId, { type: "NEW_SHAPE", shape });
+      return;
+    }
 
-      room.users.forEach((u) =>
-        u.ws.send(JSON.stringify({ type: "NEW_SHAPE", shape }))
-      );
-    } // DELETE_SHAPE
     if (parsedData.type === "DELETE_SHAPE") {
-      const { roomId, shapeId } = parsedData;
-      // Remove from DB
-      await prisma.shape.delete({ where: { id: shapeId } });
+      if (parsedData.roomId !== connectionRoomId) {
+        ws.send(
+          JSON.stringify({ type: "ERROR", message: "Room ID mismatch" })
+        );
+        return;
+      }
+      if (!user.roomId || user.roomId !== connectionRoomId) {
+        ws.send(
+          JSON.stringify({ type: "ERROR", message: "Join the room first" })
+        );
+        return;
+      }
 
-      const room = rooms.find((r) => r.roomId === roomId);
-      if (!room) return;
+      const { shapeId } = parsedData;
+      try {
+        await prisma.shape.delete({ where: { id: shapeId } });
+      } catch (error) {
+        console.error("Failed to delete shape:", error);
+        ws.send(JSON.stringify({ type: "ERROR", message: "Shape not found" }));
+        return;
+      }
 
-      // Broadcast delete to all users
-      room.users.forEach((u) =>
-        u.ws.send(JSON.stringify({ type: "DELETE_SHAPE", shapeId }))
-      );
+      broadcastToRoom(connectionRoomId, { type: "DELETE_SHAPE", shapeId });
     }
   });
 
   ws.on("close", () => {
-    // Optional: handle disconnect cleanup if needed
+    users = users.filter((u) => u !== user);
+    if (user.roomId) {
+      removeUserFromRoom(user, user.roomId);
+    }
   });
 });
 

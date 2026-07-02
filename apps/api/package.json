@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "tsc -b",
+    "build": "pnpm --filter @repo/jwt build && tsc -b",
     "start": "node ./dist/index.js",
+    "dev": "pnpm --filter @repo/jwt build && tsc -b && node --watch ./dist/index.js",
     "postinstall": "if [ -d dist ]; then ls -R ./dist; fi"
   },
   "dependencies": {
