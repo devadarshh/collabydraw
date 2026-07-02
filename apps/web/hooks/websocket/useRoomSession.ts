@@ -7,42 +7,59 @@ import { useWsStore } from "./useWsStore";
 
 export const intentionalLeaveRef = { current: false };
 
+function clearRoomFromUrl() {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("room")) return;
+  url.searchParams.delete("room");
+  const nextPath = `${url.pathname}${url.search}${url.hash}`;
+  window.history.replaceState(window.history.state, "", nextPath);
+}
+
 export function useLeaveRoom() {
   const router = useRouter();
-  const {
-    ws,
-    roomId,
-    isConnected,
-    isInRoom,
-    setWs,
-    setRoomId,
-    setIsConnected,
-    setIsInRoom,
-    setAutoJoinDisabled,
-    setParticipants,
-    resetSession,
-  } = useWsStore();
+  const { ws, roomId, isInRoom, leaveSession } = useWsStore();
 
   const leaveRoom = useCallback(() => {
-    if (!ws || !roomId) {
+    if (!roomId && !isInRoom) {
+      toast.error("You are not in a room");
+      return;
+    }
+
+    const activeRoomId = roomId;
+    if (!activeRoomId) {
       toast.error("You are not in a room");
       return;
     }
 
     intentionalLeaveRef.current = true;
-    setAutoJoinDisabled(true);
-    ws.send(JSON.stringify({ type: "LEAVE_ROOM", roomId }));
-    ws.close();
-    resetSession();
-    router.replace("/");
-    toast.success("Left the room successfully!");
-  }, [
-    ws,
-    roomId,
-    router,
-    resetSession,
-    setAutoJoinDisabled,
-  ]);
 
-  return { leaveRoom, roomId, isConnected, isInRoom };
+    clearRoomFromUrl();
+    router.replace("/", { scroll: false });
+
+    if (
+      ws &&
+      (ws.readyState === WebSocket.OPEN ||
+        ws.readyState === WebSocket.CONNECTING)
+    ) {
+      try {
+        ws.send(
+          JSON.stringify({ type: "LEAVE_ROOM", roomId: activeRoomId })
+        );
+      } catch {
+        // Socket may already be closing.
+      }
+      ws.close();
+    }
+
+    leaveSession(activeRoomId);
+    toast.success("Left the room successfully!");
+  }, [ws, roomId, isInRoom, router, leaveSession]);
+
+  return {
+    leaveRoom,
+    roomId,
+    isInRoom,
+    isConnected: useWsStore((state) => state.isConnected),
+  };
 }

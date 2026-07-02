@@ -19,6 +19,7 @@ app.use(
 
       const allowedOrigins = [
         "https://collabydraw-web.vercel.app",
+        "https://collabydraw.adarshsingh.xyz",
       ];
 
       if (

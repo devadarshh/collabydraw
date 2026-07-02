@@ -33,13 +33,15 @@ function CreateRoomDialogContent() {
     ws,
     isInRoom,
     autoJoinDisabled,
+    declinedRoomId,
+    connectionGeneration,
     setIsConnected,
     setIsInRoom,
     setWs,
     setRoomId,
     setParticipants,
-    setAutoJoinDisabled,
-    resetSession,
+    resetConnection,
+    clearLeaveGuards,
   } = useWsStore();
   const [localRoomId, setLocalRoomId] = useState<string>("");
 
@@ -52,6 +54,7 @@ function CreateRoomDialogContent() {
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roomIdRef = useRef<string>("");
   const guestJoinAttempted = useRef(false);
+  const connectionGenerationRef = useRef(0);
 
   const clearReconnectTimer = () => {
     if (reconnectTimer.current) {
@@ -60,10 +63,23 @@ function CreateRoomDialogContent() {
     }
   };
 
+  const shouldBlockRoomJoin = useCallback((roomId: string) => {
+    const state = useWsStore.getState();
+    return (
+      state.autoJoinDisabled ||
+      state.declinedRoomId === roomId
+    );
+  }, []);
+
   const connectWebSocket = useCallback(
     (newRoomId: string) => {
+      if (shouldBlockRoomJoin(newRoomId)) return;
+
       const currentToken = useAuthStore.getState().token;
       if (!currentToken) return;
+
+      const generationAtConnect = useWsStore.getState().connectionGeneration;
+      connectionGenerationRef.current = generationAtConnect;
 
       const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080";
       const websocket = new WebSocket(
@@ -71,6 +87,14 @@ function CreateRoomDialogContent() {
       );
 
       websocket.onopen = () => {
+        if (
+          shouldBlockRoomJoin(newRoomId) ||
+          useWsStore.getState().connectionGeneration !== generationAtConnect
+        ) {
+          websocket.close();
+          return;
+        }
+
         reconnectAttempts.current = 0;
         roomIdRef.current = newRoomId;
         setWs(websocket);
@@ -79,7 +103,10 @@ function CreateRoomDialogContent() {
         websocket.send(
           JSON.stringify({ type: "JOIN_ROOM", roomId: newRoomId })
         );
-        router.replace(`/?room=${newRoomId}`);
+
+        if (!window.location.search.includes(`room=${newRoomId}`)) {
+          router.replace(`/?room=${newRoomId}`);
+        }
       };
 
       websocket.onclose = () => {
@@ -88,29 +115,38 @@ function CreateRoomDialogContent() {
         setWs(null);
         setParticipants([]);
 
-        if (intentionalLeaveRef.current) {
+        if (
+          intentionalLeaveRef.current ||
+          useWsStore.getState().autoJoinDisabled ||
+          useWsStore.getState().connectionGeneration !== generationAtConnect
+        ) {
           intentionalLeaveRef.current = false;
           roomIdRef.current = "";
-          resetSession();
           setLocalRoomId("");
-          toast.info("Disconnected from room");
           return;
         }
 
         if (
           reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS &&
-          roomIdRef.current
+          roomIdRef.current &&
+          !shouldBlockRoomJoin(roomIdRef.current)
         ) {
           const delay =
             BASE_RECONNECT_DELAY_MS * 2 ** reconnectAttempts.current;
           reconnectAttempts.current += 1;
+          const roomToReconnect = roomIdRef.current;
           toast.info(`Reconnecting in ${delay / 1000}s...`);
           reconnectTimer.current = setTimeout(() => {
-            connectWebSocket(roomIdRef.current);
+            if (
+              useWsStore.getState().connectionGeneration !== generationAtConnect
+            ) {
+              return;
+            }
+            connectWebSocket(roomToReconnect);
           }, delay);
         } else {
           roomIdRef.current = "";
-          resetSession();
+          resetConnection();
           setLocalRoomId("");
           toast.error("Connection lost. Please rejoin the room.");
         }
@@ -122,50 +158,50 @@ function CreateRoomDialogContent() {
     },
     [
       router,
-      resetSession,
+      resetConnection,
       setIsConnected,
       setIsInRoom,
       setWs,
       setRoomId,
       setParticipants,
+      shouldBlockRoomJoin,
     ]
   );
 
   const joinRoom = useCallback(
     (newRoomId: string) => {
+      if (shouldBlockRoomJoin(newRoomId)) return;
+
       intentionalLeaveRef.current = false;
       clearReconnectTimer();
       setLocalRoomId(newRoomId);
       connectWebSocket(newRoomId);
     },
-    [connectWebSocket]
+    [connectWebSocket, shouldBlockRoomJoin]
   );
 
   useEffect(() => {
     if (!roomFromUrl) {
-      setAutoJoinDisabled(false);
+      clearLeaveGuards();
       guestJoinAttempted.current = false;
+      roomIdRef.current = "";
       return;
     }
 
     setOpen(false);
-  }, [roomFromUrl, setOpen, setAutoJoinDisabled]);
+  }, [roomFromUrl, setOpen, clearLeaveGuards]);
 
   useEffect(() => {
-    if (!roomFromUrl || autoJoinDisabled) return;
+    if (!roomFromUrl || autoJoinDisabled || declinedRoomId === roomFromUrl) {
+      return;
+    }
 
-    if (roomFromUrl && token && !isInRoom && !ws) {
+    if (token && !isInRoom && !ws) {
       joinRoom(roomFromUrl);
       return;
     }
 
-    if (
-      roomFromUrl &&
-      !token &&
-      !isInRoom &&
-      !ws &&
-      !guestJoinAttempted.current
-    ) {
+    if (!token && !isInRoom && !ws && !guestJoinAttempted.current) {
       guestJoinAttempted.current = true;
       joinAsGuest(roomFromUrl)
         .then((roomId) => joinRoom(roomId))
@@ -184,15 +220,26 @@ function CreateRoomDialogContent() {
     isInRoom,
     ws,
     autoJoinDisabled,
+    declinedRoomId,
     joinRoom,
     joinAsGuest,
   ]);
+
+  useEffect(() => {
+    if (autoJoinDisabled || declinedRoomId) {
+      clearReconnectTimer();
+      roomIdRef.current = "";
+    }
+  }, [autoJoinDisabled, declinedRoomId, connectionGeneration]);
 
   useEffect(() => {
     return () => clearReconnectTimer();
   }, []);
 
   const handleStartSession = async () => {
+    clearLeaveGuards();
+    guestJoinAttempted.current = false;
+
     if (!token) {
       try {
         const roomId = await joinAsGuest();
@@ -236,6 +283,8 @@ function CreateRoomDialogContent() {
   };
 
   const handleCloseSession = () => {
+    clearReconnectTimer();
+    roomIdRef.current = "";
     leaveRoom();
     setLocalRoomId("");
     setOpen(false);

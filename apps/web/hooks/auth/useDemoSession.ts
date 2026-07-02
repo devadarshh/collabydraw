@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useAuthStore } from "./useAuthStore";
 import { useRoomDialog } from "@/hooks/websocket/useRoomDialog";
+import { useWsStore } from "@/hooks/websocket/useWsStore";
 
 interface GuestSessionResponse {
   success: boolean;
@@ -49,6 +50,7 @@ export function useDemoSession() {
 
       setIsLoading(true);
       try {
+        useWsStore.getState().clearLeaveGuards();
         const roomId = await createGuestSession();
         options?.dismissWelcome?.();
         router.push(`/?room=${roomId}`);
