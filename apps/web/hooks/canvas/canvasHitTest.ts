@@ -16,14 +16,10 @@ function isPointInPolygonObject(
   return fabric.Intersection.isPointInPolygon(pointer, scenePoints);
 }
 
-export function findEraserTarget(
+export function findEraserTargetAtPoint(
   canvas: fabric.Canvas,
-  e: fabric.TPointerEvent
+  pointer: fabric.Point
 ): CustomFabricObject | undefined {
-  const fromTargetFind = canvas.findTarget(e) as CustomFabricObject | undefined;
-  if (fromTargetFind) return fromTargetFind;
-
-  const pointer = canvas.getScenePoint(e);
   const objects = canvas.getObjects().slice().reverse();
 
   for (const obj of objects) {
@@ -42,4 +38,46 @@ export function findEraserTarget(
   }
 
   return undefined;
+}
+
+export function findEraserTarget(
+  canvas: fabric.Canvas,
+  e: fabric.TPointerEvent
+): CustomFabricObject | undefined {
+  const fromTargetFind = canvas.findTarget(e) as CustomFabricObject | undefined;
+  if (fromTargetFind) return fromTargetFind;
+
+  return findEraserTargetAtPoint(canvas, canvas.getScenePoint(e));
+}
+
+export function findEraserTargetsAlongPath(
+  canvas: fabric.Canvas,
+  from: fabric.Point,
+  to: fabric.Point,
+  stepPx = 4
+): CustomFabricObject[] {
+  const distance = Math.hypot(to.x - from.x, to.y - from.y);
+  if (distance === 0) {
+    const target = findEraserTargetAtPoint(canvas, to);
+    return target ? [target] : [];
+  }
+
+  const steps = Math.ceil(distance / stepPx);
+  const found: CustomFabricObject[] = [];
+  const seen = new Set<string>();
+
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const point = new fabric.Point(
+      from.x + (to.x - from.x) * t,
+      from.y + (to.y - from.y) * t
+    );
+    const target = findEraserTargetAtPoint(canvas, point);
+    if (target?.id && !seen.has(target.id)) {
+      seen.add(target.id);
+      found.push(target);
+    }
+  }
+
+  return found;
 }

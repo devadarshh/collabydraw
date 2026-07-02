@@ -10,7 +10,10 @@ import {
   removeObjectFromCanvas,
   type CustomFabricObject,
 } from "../websocket/wsMessages";
-import { findEraserTarget } from "./canvasHitTest";
+import {
+  findEraserTarget,
+  findEraserTargetsAlongPath,
+} from "./canvasHitTest";
 
 interface UseDrawShapesProps {
   canvas: fabric.Canvas | null;
@@ -119,14 +122,30 @@ export function useDrawShapes({
 
     let arrowLine: fabric.Line | null = null;
     let arrowHead: fabric.Triangle | null = null;
+    let isErasing = false;
+    let lastEraserPoint: fabric.Point | null = null;
+    const erasedDuringStroke = new WeakSet<CustomFabricObject>();
+
+    const eraseTarget = (target: CustomFabricObject) => {
+      if (erasedDuringStroke.has(target)) return;
+      erasedDuringStroke.add(target);
+      removeShape(target);
+    };
+
+    const stopErasing = () => {
+      isErasing = false;
+      lastEraserPoint = null;
+    };
 
     const handleMouseDown = (opt: fabric.TEvent<fabric.TPointerEvent>) => {
       if (!canvas) return;
       const pointer = canvas.getPointer(opt.e);
 
       if (mode === "eraser") {
+        isErasing = true;
+        lastEraserPoint = canvas.getScenePoint(opt.e);
         const target = findEraserTarget(canvas, opt.e);
-        if (target) removeShape(target);
+        if (target) eraseTarget(target);
         return;
       }
 
@@ -238,8 +257,26 @@ export function useDrawShapes({
     };
 
     const handleMouseMove = (opt: fabric.TEvent<fabric.TPointerEvent>) => {
+      if (!canvas) return;
+
+      if (isErasing && mode === "eraser") {
+        const currentPoint = canvas.getScenePoint(opt.e);
+        if (lastEraserPoint) {
+          const targets = findEraserTargetsAlongPath(
+            canvas,
+            lastEraserPoint,
+            currentPoint
+          );
+          targets.forEach(eraseTarget);
+        } else {
+          const target = findEraserTarget(canvas, opt.e);
+          if (target) eraseTarget(target);
+        }
+        lastEraserPoint = currentPoint;
+        return;
+      }
+
       if (
-        !canvas ||
         mode !== "draw" ||
         !drawingShape ||
         !startPoint.current ||
@@ -304,7 +341,14 @@ export function useDrawShapes({
     };
 
     const handleMouseUp = () => {
-      if (!canvas || mode !== "draw") return;
+      if (!canvas) return;
+
+      if (mode === "eraser") {
+        stopErasing();
+        return;
+      }
+
+      if (mode !== "draw") return;
 
       if (drawingShape === "arrow" && arrowLine && arrowHead) {
         const arrowGroup = new fabric.Group([arrowLine, arrowHead], {
