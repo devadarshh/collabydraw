@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import {
   Upload,
@@ -92,6 +92,15 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
   const pendingFileRef = useRef<File | null>(null);
 
   const colorOptions = ["#ffffff", "#f0f0f0", "#121212", "#fef3c7", "#d1fae5"];
+
+  const onlineParticipants = useMemo(() => {
+    const seen = new Set<string>();
+    return participants.filter((participant) => {
+      if (seen.has(participant.userId)) return false;
+      seen.add(participant.userId);
+      return true;
+    });
+  }, [participants]);
 
   useEffect(() => {
     setHexInput(backgroundColor);
@@ -264,11 +273,11 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
               Room: {roomId}
             </p>
             <p className="text-sm font-medium text-[#605ebc] mb-2">
-              {participants.length}{" "}
-              {participants.length === 1 ? "user" : "users"} online
+              {onlineParticipants.length}{" "}
+              {onlineParticipants.length === 1 ? "user" : "users"} online
             </p>
             <ul className="space-y-1.5 mb-3 max-h-32 overflow-y-auto">
-              {participants.map((participant) => (
+              {onlineParticipants.map((participant) => (
                 <li
                   key={participant.userId}
                   className="flex items-center gap-2 text-sm text-[#333] dark:text-[#ddd]"

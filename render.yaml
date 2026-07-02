@@ -8,3 +8,13 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
+
+  - type: web
+    name: collabydraw-websocket
+    runtime: node
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter websocket build
+    startCommand: pnpm --filter websocket start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20

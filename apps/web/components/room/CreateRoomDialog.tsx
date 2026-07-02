@@ -113,7 +113,6 @@ function CreateRoomDialogContent() {
         setIsConnected(false);
         setIsInRoom(false);
         setWs(null);
-        setParticipants([]);
 
         if (
           intentionalLeaveRef.current ||
@@ -123,6 +122,7 @@ function CreateRoomDialogContent() {
           intentionalLeaveRef.current = false;
           roomIdRef.current = "";
           setLocalRoomId("");
+          setParticipants([]);
           return;
         }
 

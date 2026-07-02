@@ -12,7 +12,20 @@ import path from "path";
 
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
-const PORT = process.env.WS_PORT || 8080;
+function resolvePort(): number {
+  const rawPort = process.env.PORT ?? process.env.WS_PORT;
+  if (!rawPort) return 8080;
+
+  const port = Number.parseInt(rawPort, 10);
+  if (!Number.isInteger(port) || port < 0 || port >= 65536) {
+    console.warn(`Invalid port "${rawPort}", falling back to 8080`);
+    return 8080;
+  }
+
+  return port;
+}
+
+const PORT = resolvePort();
 
 const server = http.createServer((req, res) => {
   if (req.url === "/health" && req.method === "GET") {
@@ -73,7 +86,9 @@ function authUser(token: string) {
 function getCurrentParticipantsInRoom(roomId: string): Participant[] {
   const room = rooms.find((r) => r.roomId === roomId);
   if (!room) return [];
-  return room.users.map((u) => ({ userId: u.userId, userName: u.userName }));
+  return room.users
+    .filter((u) => u.ws.readyState === WebSocket.OPEN)
+    .map((u) => ({ userId: u.userId, userName: u.userName }));
 }
 
 function broadcastToRoom(
@@ -86,7 +101,9 @@ function broadcastToRoom(
   const payload = JSON.stringify(message);
   room.users.forEach((u) => {
     if (excludeUserId && u.userId === excludeUserId) return;
-    u.ws.send(payload);
+    if (u.ws.readyState === WebSocket.OPEN) {
+      u.ws.send(payload);
+    }
   });
 }
 
@@ -94,7 +111,12 @@ function removeUserFromRoom(user: User, connectionRoomId: string) {
   const room = rooms.find((r) => r.roomId === connectionRoomId);
   if (!room) return;
 
-  room.users = room.users.filter((u) => u.userId !== user.userId);
+  const activeEntry = room.users.find((u) => u.userId === user.userId);
+  if (!activeEntry || activeEntry.ws !== user.ws) {
+    return;
+  }
+
+  room.users = room.users.filter((u) => u.ws !== user.ws);
   user.roomId = null;
 
   if (room.admin === user.userId && room.users.length > 0) {
@@ -172,7 +194,6 @@ wss.on("connection", (ws, req) => {
       }
 
       let room = rooms.find((r) => r.roomId === connectionRoomId);
-      const isNewJoiner = !room?.users.some((u) => u.userId === user.userId);
 
       if (!room) {
         room = {
@@ -185,10 +206,17 @@ wss.on("connection", (ws, req) => {
         console.log(`${user.userName} is admin of new room ${connectionRoomId}`);
       }
 
-      if (!room.users.some((u) => u.userId === user.userId)) {
+      const existingUserIndex = room.users.findIndex(
+        (u) => u.userId === user.userId
+      );
+      const isNewJoiner = existingUserIndex < 0;
+
+      if (existingUserIndex >= 0) {
+        room.users[existingUserIndex] = user;
+      } else {
         room.users.push(user);
-        user.roomId = connectionRoomId;
       }
+      user.roomId = connectionRoomId;
 
       ws.send(
         JSON.stringify({
@@ -320,6 +348,6 @@ wss.on("connection", (ws, req) => {
   });
 });
 
-server.listen(Number(PORT), () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`WebSocket server running on port ${PORT}`);
 });
