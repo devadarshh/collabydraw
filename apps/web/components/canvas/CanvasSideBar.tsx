@@ -34,7 +34,7 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
   zoom,
   setZoom,
 }) => {
-  const isConnected = useWsStore((state) => state.isConnected);
+  const isInRoom = useWsStore((state) => state.isInRoom);
 
   useEffect(() => {
     const toolsWithProperties = tools
@@ -88,7 +88,7 @@ export const CanvasSidebar: React.FC<CanvasSidebarProps> = ({
           onClick={() => setShowSidebar((prev) => !prev)}
           className={`flex items-center gap-2 px-3 py-1.5 text-sm border border-border rounded-md transition-colors cursor-pointer
             ${
-              isConnected
+              isInRoom
                 ? "bg-green-600 text-white"
                 : showSidebar
                   ? "bg-gradient-to-r from-[#605ebc] to-[#605ebc] text-white"

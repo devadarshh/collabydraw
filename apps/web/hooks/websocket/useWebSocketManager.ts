@@ -9,10 +9,11 @@ import { useWsStore } from "@/hooks/websocket/useWsStore";
 
 export const useWebSocketManager = () => {
   const { canvas } = useCanvasStore();
-  const { ws, isConnected, setParticipants } = useWsStore();
+  const { ws, isConnected, isInRoom, setParticipants, setIsInRoom, setIsConnected } =
+    useWsStore();
 
   useEffect(() => {
-    if (!canvas || !ws || !isConnected) return;
+    if (!canvas || !ws) return;
 
     const handleMessage = (event: MessageEvent) => {
       let msg: ServerMessage;
@@ -25,6 +26,8 @@ export const useWebSocketManager = () => {
 
       switch (msg.type) {
         case "ROOM_JOINED":
+          setIsInRoom(true);
+          setIsConnected(true);
           setParticipants(msg.participants);
           canvas.clear();
           canvas.backgroundColor =
@@ -112,5 +115,5 @@ export const useWebSocketManager = () => {
     return () => {
       ws.removeEventListener("message", handleMessage);
     };
-  }, [canvas, ws, isConnected, setParticipants]);
+  }, [canvas, ws, isConnected, setParticipants, setIsInRoom, setIsConnected]);
 };

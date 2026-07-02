@@ -80,7 +80,7 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
     importDrawing,
   } = useCanvasStore();
   const { setOpen } = useRoomDialog();
-  const { roomId, isConnected, participants } = useWsStore();
+  const { roomId, isInRoom, participants } = useWsStore();
   const { leaveRoom } = useLeaveRoom();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -95,11 +95,11 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
   }, [backgroundColor]);
 
   const handleLogout = () => {
-    if (isConnected) {
+    if (isInRoom) {
       leaveRoom();
     }
     logout();
-    if (!isConnected) {
+    if (!isInRoom) {
       toast.success(isGuest ? "Demo ended" : "Logged out successfully!");
     }
   };
@@ -107,7 +107,7 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   const handleImportClick = () => {
-    if (isConnected) {
+    if (isInRoom) {
       toast.error("Leave the live session before importing a drawing.");
       return;
     }
@@ -236,7 +236,7 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
           )}
         </div>
 
-        {isConnected && roomId && (
+        {isInRoom && roomId && (
           <section className="border rounded-lg px-3 py-3 bg-[#8d8bd611] dark:bg-[#605ebc22]">
             <SectionTitle>Live Session</SectionTitle>
             <p className="text-xs text-[#555] dark:text-[#bbb] mb-2 truncate">

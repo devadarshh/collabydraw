@@ -13,10 +13,14 @@ export function useLeaveRoom() {
     ws,
     roomId,
     isConnected,
+    isInRoom,
     setWs,
     setRoomId,
     setIsConnected,
+    setIsInRoom,
+    setAutoJoinDisabled,
     setParticipants,
+    resetSession,
   } = useWsStore();
 
   const leaveRoom = useCallback(() => {
@@ -26,23 +30,19 @@ export function useLeaveRoom() {
     }
 
     intentionalLeaveRef.current = true;
+    setAutoJoinDisabled(true);
     ws.send(JSON.stringify({ type: "LEAVE_ROOM", roomId }));
     ws.close();
-    setIsConnected(false);
-    setWs(null);
-    setRoomId(null);
-    setParticipants([]);
+    resetSession();
     router.replace("/");
     toast.success("Left the room successfully!");
   }, [
     ws,
     roomId,
     router,
-    setIsConnected,
-    setWs,
-    setRoomId,
-    setParticipants,
+    resetSession,
+    setAutoJoinDisabled,
   ]);
 
-  return { leaveRoom, roomId, isConnected };
+  return { leaveRoom, roomId, isConnected, isInRoom };
 }

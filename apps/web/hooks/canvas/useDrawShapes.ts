@@ -40,23 +40,23 @@ export function useDrawShapes({
     strokeStyle,
     textColor,
   } = useCanvasProperties();
-  const { ws, isConnected, roomId } = useWsStore();
+  const { ws, isInRoom, roomId } = useWsStore();
 
   const sendShapeToServer = useCallback(
     (shapeObject: CustomFabricObject) => {
-      if (ws && isConnected && roomId && shapeObject) {
+      if (ws && isInRoom && roomId && shapeObject) {
         sendCreateShape(ws, roomId, shapeObject);
       }
     },
-    [ws, isConnected, roomId]
+    [ws, isInRoom, roomId]
   );
 
   const removeShape = useCallback(
     (target: CustomFabricObject) => {
       if (!canvas) return;
-      removeObjectFromCanvas(canvas, target, { ws, roomId, isConnected });
+      removeObjectFromCanvas(canvas, target, { ws, roomId, isInRoom });
     },
-    [canvas, ws, roomId, isConnected]
+    [canvas, ws, roomId, isInRoom]
   );
 
   useEffect(() => {
@@ -69,7 +69,7 @@ export function useDrawShapes({
   }, [canvas, mode, strokeColor, strokeWidth]);
 
   useEffect(() => {
-    if (!canvas || !isConnected || !roomId) return;
+    if (!canvas || !isInRoom || !roomId) return;
     const active = canvas.getActiveObject() as CustomFabricObject | undefined;
     if (!active?.id) return;
 
@@ -97,7 +97,7 @@ export function useDrawShapes({
     sendShapeToServer(active);
   }, [
     canvas,
-    isConnected,
+    isInRoom,
     roomId,
     strokeColor,
     fillColor,

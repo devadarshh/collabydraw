@@ -1,6 +1,8 @@
 "use client";
 
+import { Suspense } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { useFirstVisit } from "@/hooks/useFirstVisit";
 import { useDemoSession } from "@/hooks/auth/useDemoSession";
 
@@ -33,7 +35,9 @@ const CanvasBoard = dynamic(
   }
 );
 
-const CanvasPage: React.FC = () => {
+function CanvasPageContent() {
+  const searchParams = useSearchParams();
+  const roomFromUrl = searchParams.get("room");
   const { isFirstVisit, dismiss } = useFirstVisit("hasSeenWelcome");
   const { startDemo, isLoading: isDemoLoading } = useDemoSession();
 
@@ -41,11 +45,13 @@ const CanvasPage: React.FC = () => {
     startDemo({ dismissWelcome: dismiss });
   };
 
+  const showWelcome = isFirstVisit && !roomFromUrl;
+
   return (
     <div className="flex h-screen w-screen overflow-hidden">
       <div className="flex-1 relative">
         <CanvasBoard />
-        {isFirstVisit && (
+        {showWelcome && (
           <WelcomeOverlay
             onDismiss={dismiss}
             onTryDemo={handleTryDemo}
@@ -54,6 +60,22 @@ const CanvasPage: React.FC = () => {
         )}
       </div>
     </div>
+  );
+}
+
+const CanvasPage: React.FC = () => {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen w-screen overflow-hidden">
+          <div className="flex-1 relative">
+            <CanvasBoard />
+          </div>
+        </div>
+      }
+    >
+      <CanvasPageContent />
+    </Suspense>
   );
 };
 

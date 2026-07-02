@@ -28,7 +28,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
   onOpenPropertiesPanel,
   selectedTool,
 }) => {
-  const isConnected = useWsStore((state) => state.isConnected);
+  const isInRoom = useWsStore((state) => state.isInRoom);
 
   const toolsWithProperties: ShapeType[] = [
     "rectangle",
@@ -48,7 +48,7 @@ export const MobileBottomBar: React.FC<MobileBottomBarProps> = ({
       <button
         onClick={() => setShowSidebar(!showSidebar)}
         className={`flex items-center justify-center w-10 h-10 rounded-full ${
-          isConnected ? "bg-green-600" : "bg-[#605ebc]"
+          isInRoom ? "bg-green-600" : "bg-[#605ebc]"
         } text-white cursor-pointer transition hover:brightness-110`}
       >
         <Settings className="w-5 h-5" />

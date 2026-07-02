@@ -31,11 +31,15 @@ function CreateRoomDialogContent() {
   const { joinAsGuest } = useDemoSession();
   const {
     ws,
-    isConnected,
+    isInRoom,
+    autoJoinDisabled,
     setIsConnected,
+    setIsInRoom,
     setWs,
     setRoomId,
     setParticipants,
+    setAutoJoinDisabled,
+    resetSession,
   } = useWsStore();
   const [localRoomId, setLocalRoomId] = useState<string>("");
 
@@ -69,25 +73,25 @@ function CreateRoomDialogContent() {
       websocket.onopen = () => {
         reconnectAttempts.current = 0;
         roomIdRef.current = newRoomId;
-        websocket.send(
-          JSON.stringify({ type: "JOIN_ROOM", roomId: newRoomId })
-        );
-        setIsConnected(true);
         setWs(websocket);
         setRoomId(newRoomId);
         setLocalRoomId(newRoomId);
+        websocket.send(
+          JSON.stringify({ type: "JOIN_ROOM", roomId: newRoomId })
+        );
         router.replace(`/?room=${newRoomId}`);
       };
 
       websocket.onclose = () => {
         setIsConnected(false);
+        setIsInRoom(false);
         setWs(null);
         setParticipants([]);
 
         if (intentionalLeaveRef.current) {
           intentionalLeaveRef.current = false;
           roomIdRef.current = "";
-          setRoomId(null);
+          resetSession();
           setLocalRoomId("");
           toast.info("Disconnected from room");
           return;
@@ -106,7 +110,7 @@ function CreateRoomDialogContent() {
           }, delay);
         } else {
           roomIdRef.current = "";
-          setRoomId(null);
+          resetSession();
           setLocalRoomId("");
           toast.error("Connection lost. Please rejoin the room.");
         }
@@ -118,7 +122,9 @@ function CreateRoomDialogContent() {
     },
     [
       router,
+      resetSession,
       setIsConnected,
+      setIsInRoom,
       setWs,
       setRoomId,
       setParticipants,
@@ -136,7 +142,19 @@ function CreateRoomDialogContent() {
   );
 
   useEffect(() => {
-    if (roomFromUrl && token && !isConnected) {
+    if (!roomFromUrl) {
+      setAutoJoinDisabled(false);
+      guestJoinAttempted.current = false;
+      return;
+    }
+
+    setOpen(false);
+  }, [roomFromUrl, setOpen, setAutoJoinDisabled]);
+
+  useEffect(() => {
+    if (!roomFromUrl || autoJoinDisabled) return;
+
+    if (roomFromUrl && token && !isInRoom && !ws) {
       joinRoom(roomFromUrl);
       return;
     }
@@ -144,7 +162,8 @@ function CreateRoomDialogContent() {
     if (
       roomFromUrl &&
       !token &&
-      !isConnected &&
+      !isInRoom &&
+      !ws &&
       !guestJoinAttempted.current
     ) {
       guestJoinAttempted.current = true;
@@ -159,7 +178,15 @@ function CreateRoomDialogContent() {
           toast.error(message);
         });
     }
-  }, [roomFromUrl, token, isConnected, joinRoom, joinAsGuest]);
+  }, [
+    roomFromUrl,
+    token,
+    isInRoom,
+    ws,
+    autoJoinDisabled,
+    joinRoom,
+    joinAsGuest,
+  ]);
 
   useEffect(() => {
     return () => clearReconnectTimer();
@@ -229,7 +256,7 @@ function CreateRoomDialogContent() {
         </DialogHeader>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          {!isConnected ? (
+          {!isInRoom ? (
             <Button
               onClick={handleStartSession}
               size="lg"

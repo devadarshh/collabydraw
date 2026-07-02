@@ -38,7 +38,7 @@ export function removeObjectFromCanvas(
   opts?: {
     ws?: WebSocket | null;
     roomId?: string | null;
-    isConnected?: boolean;
+    isInRoom?: boolean;
   }
 ) {
   const shapeId = obj.id;
@@ -46,7 +46,7 @@ export function removeObjectFromCanvas(
   canvas.discardActiveObject();
   canvas.requestRenderAll();
 
-  if (opts?.ws && opts?.isConnected && opts?.roomId && shapeId) {
+  if (opts?.ws && opts?.isInRoom && opts?.roomId && shapeId) {
     sendDeleteShape(opts.ws, opts.roomId, shapeId);
   }
 }

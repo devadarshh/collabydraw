@@ -30,7 +30,7 @@ function CanvasBoardContent() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { canvas, setCanvas, setBackgroundColor } = useCanvasStore();
   const { resolvedTheme } = useTheme();
-  const { isConnected } = useWsStore();
+  const { isInRoom } = useWsStore();
   const searchParams = useSearchParams();
   const roomFromUrl = searchParams.get("room");
 
@@ -47,7 +47,7 @@ function CanvasBoardContent() {
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [selectedTool, setSelectedTool] = useState<ShapeType>("select");
 
-  const shouldUseLocalStorage = !isConnected && !roomFromUrl;
+  const shouldUseLocalStorage = !isInRoom && !roomFromUrl;
 
   useEffect(() => {
     if (!canvasRef.current) return;

@@ -10,7 +10,7 @@ export function useDeleteListener(
   canvas: fabric.Canvas | null,
   selectedTool: string
 ): void {
-  const { ws, roomId, isConnected } = useWsStore();
+  const { ws, roomId, isInRoom } = useWsStore();
 
   useEffect(() => {
     if (!canvas) return;
@@ -21,7 +21,7 @@ export function useDeleteListener(
         const activeObjects = canvas.getActiveObjects() as CustomFabricObject[];
         if (activeObjects.length > 0) {
           activeObjects.forEach((object) => {
-            removeObjectFromCanvas(canvas, object, { ws, roomId, isConnected });
+            removeObjectFromCanvas(canvas, object, { ws, roomId, isInRoom });
           });
         }
       }
@@ -31,5 +31,5 @@ export function useDeleteListener(
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [canvas, selectedTool, ws, roomId, isConnected]);
+  }, [canvas, selectedTool, ws, roomId, isInRoom]);
 }
