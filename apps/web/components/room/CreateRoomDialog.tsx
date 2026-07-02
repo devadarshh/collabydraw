@@ -14,6 +14,10 @@ import {
 import { useRoomDialog } from "@/hooks/websocket/useRoomDialog";
 import { useAuthStore } from "@/hooks/auth/useAuthStore";
 import { useWsStore } from "@/hooks/websocket/useWsStore";
+import {
+  intentionalLeaveRef,
+  useLeaveRoom,
+} from "@/hooks/websocket/useRoomSession";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -37,7 +41,7 @@ function CreateRoomDialogContent() {
   const searchParams = useSearchParams();
   const roomFromUrl = searchParams.get("room");
 
-  const intentionalLeave = useRef(false);
+  const { leaveRoom } = useLeaveRoom();
   const reconnectAttempts = useRef(0);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roomIdRef = useRef<string>("");
@@ -76,8 +80,8 @@ function CreateRoomDialogContent() {
         setWs(null);
         setParticipants([]);
 
-        if (intentionalLeave.current) {
-          intentionalLeave.current = false;
+        if (intentionalLeaveRef.current) {
+          intentionalLeaveRef.current = false;
           roomIdRef.current = "";
           setRoomId(null);
           setLocalRoomId("");
@@ -120,7 +124,7 @@ function CreateRoomDialogContent() {
 
   const joinRoom = useCallback(
     (newRoomId: string) => {
-      intentionalLeave.current = false;
+      intentionalLeaveRef.current = false;
       clearReconnectTimer();
       setLocalRoomId(newRoomId);
       connectWebSocket(newRoomId);
@@ -173,20 +177,9 @@ function CreateRoomDialogContent() {
   };
 
   const handleCloseSession = () => {
-    if (ws && localRoomId) {
-      intentionalLeave.current = true;
-      clearReconnectTimer();
-      roomIdRef.current = "";
-      ws.send(JSON.stringify({ type: "LEAVE_ROOM", roomId: localRoomId }));
-      ws.close();
-      setIsConnected(false);
-      setWs(null);
-      setRoomId(null);
-      setParticipants([]);
-      setLocalRoomId("");
-      router.replace(`/`);
-      toast.success("Left the room successfully!");
-    }
+    leaveRoom();
+    setLocalRoomId("");
+    setOpen(false);
   };
 
   return (

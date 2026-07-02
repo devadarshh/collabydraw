@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { useAuthStore } from "@/hooks/auth/useAuthStore";
 import { toast } from "sonner";
 
 interface FormData {
@@ -18,6 +19,7 @@ interface FormData {
 
 const RegisterPage: React.FC = () => {
   const router = useRouter();
+  const login = useAuthStore((state) => state.login);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -37,9 +39,25 @@ const RegisterPage: React.FC = () => {
     setLoading(true);
 
     try {
-      await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/register`,
-        formData
+      const { data } = await axios.post<{
+        success: boolean;
+        message: string;
+        data: { id: string; name: string; email: string };
+        token: string;
+      }>(`${process.env.NEXT_PUBLIC_BACKEND_URL}/register`, formData);
+
+      if (!data.success || !data.token) {
+        toast.error("Failed to create account");
+        return;
+      }
+
+      login(
+        {
+          id: data.data.id,
+          name: data.data.name,
+          email: data.data.email,
+        },
+        data.token
       );
       toast.success("Account created successfully!");
       router.push("/");

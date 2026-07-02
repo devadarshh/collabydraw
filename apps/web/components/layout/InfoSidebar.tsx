@@ -14,6 +14,8 @@ import {
   Settings2,
   ExternalLink,
   Trash2,
+  LogOut,
+  Circle,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -25,6 +27,7 @@ import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
 import { useRoomDialog } from "@/hooks/websocket/useRoomDialog";
 import { useAuthStore } from "@/hooks/auth/useAuthStore";
 import { useWsStore } from "@/hooks/websocket/useWsStore";
+import { useLeaveRoom } from "@/hooks/websocket/useRoomSession";
 import { toast } from "sonner";
 
 interface InfoSidebarProps {
@@ -57,13 +60,19 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
   const { theme, setTheme } = useTheme();
   const { backgroundColor, setBackgroundColor, clearCanvas } = useCanvasStore();
   const { setOpen } = useRoomDialog();
-  const { ws, roomId, setWs, setRoomId, setIsConnected } = useWsStore();
+  const { roomId, isConnected, participants } = useWsStore();
+  const { leaveRoom } = useLeaveRoom();
 
   const colorOptions = ["#ffffff", "#f0f0f0", "#121212", "#fef3c7", "#d1fae5"];
 
   const handleLogout = () => {
+    if (isConnected) {
+      leaveRoom();
+    }
     logout();
-    toast.success("Logged out successfully!");
+    if (!isConnected) {
+      toast.success("Logged out successfully!");
+    }
   };
 
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
@@ -116,6 +125,9 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
               <span className="text-sm font-semibold text-[#605ebc]">
                 {user?.name}
               </span>
+              <span className="text-xs text-[#666] dark:text-[#aaa] truncate">
+                {user?.email}
+              </span>
               <Button
                 onClick={handleLogout}
                 className="w-full border border-[#605ebc] text-red-500 bg-transparent hover:bg-red-50 dark:hover:bg-red-900 cursor-pointer"
@@ -125,6 +137,44 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
             </div>
           )}
         </div>
+
+        {isConnected && roomId && (
+          <section className="border rounded-lg px-3 py-3 bg-[#8d8bd611] dark:bg-[#605ebc22]">
+            <SectionTitle>Live Session</SectionTitle>
+            <p className="text-xs text-[#555] dark:text-[#bbb] mb-2 truncate">
+              Room: {roomId}
+            </p>
+            <p className="text-sm font-medium text-[#605ebc] mb-2">
+              {participants.length}{" "}
+              {participants.length === 1 ? "user" : "users"} online
+            </p>
+            <ul className="space-y-1.5 mb-3 max-h-32 overflow-y-auto">
+              {participants.map((participant) => (
+                <li
+                  key={participant.userId}
+                  className="flex items-center gap-2 text-sm text-[#333] dark:text-[#ddd]"
+                >
+                  <Circle
+                    className="w-2 h-2 fill-green-500 text-green-500 shrink-0"
+                    aria-hidden
+                  />
+                  <span className="truncate">
+                    {participant.userName}
+                    {participant.userId === user?.id ? " (you)" : ""}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Button
+              onClick={leaveRoom}
+              variant="outline"
+              className="w-full border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950 cursor-pointer"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Leave Room
+            </Button>
+          </section>
+        )}
 
         <section>
           <SectionTitle>File Operations</SectionTitle>

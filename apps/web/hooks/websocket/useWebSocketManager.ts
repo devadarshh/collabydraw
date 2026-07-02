@@ -25,6 +25,7 @@ export const useWebSocketManager = () => {
 
       switch (msg.type) {
         case "ROOM_JOINED":
+          setParticipants(msg.participants);
           canvas.clear();
           canvas.backgroundColor =
             document.documentElement.classList.contains("dark")

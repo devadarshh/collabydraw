@@ -177,6 +177,7 @@ wss.on("connection", (ws, req) => {
           type: "ROOM_JOINED",
           roomId: connectionRoomId,
           message: "Room Joined Successfully",
+          participants: getCurrentParticipantsInRoom(connectionRoomId),
         })
       );
 

@@ -9,7 +9,12 @@ export type ClientMessage =
   | { type: "DELETE_SHAPE"; roomId: string; shapeId: string };
 
 export type ServerMessage =
-  | { type: "ROOM_JOINED"; roomId: string; message: string }
+  | {
+      type: "ROOM_JOINED";
+      roomId: string;
+      message: string;
+      participants: Participant[];
+    }
   | { type: "ROOM_LEAVED"; roomId: string; message: string }
   | {
       type: "USER_JOINED";

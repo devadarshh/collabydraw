@@ -39,12 +39,13 @@ const SignInPage: React.FC = () => {
 
     try {
       const { data } = await axios.post<{
-        data: { name: string; email: string };
+        data: { id: string; name: string; email: string };
         token: string;
       }>(`${process.env.NEXT_PUBLIC_BACKEND_URL}/login`, formData);
 
       login(
         {
+          id: data.data.id,
           name: data.data.name,
           email: data.data.email,
         },
