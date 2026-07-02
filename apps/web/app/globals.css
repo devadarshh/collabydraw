@@ -197,6 +197,28 @@ a {
   body {
     @apply bg-background text-foreground font-sans;
   }
+  button:not(:disabled),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  a[href],
+  label[for],
+  select:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+  button:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="color"],
+  input[type="range"],
+  input[type="file"] {
+    cursor: pointer;
+  }
 }
 
 #root {
@@ -244,7 +266,7 @@ a {
   color: #888;
 }
 .tool-button {
-  @apply transition-all duration-150 rounded-md text-foreground;
+  @apply transition-all duration-150 rounded-md text-foreground cursor-pointer;
 }
 
 .tool-button:hover {

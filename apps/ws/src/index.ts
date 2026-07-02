@@ -1,4 +1,5 @@
 import { WebSocketServer, WebSocket } from "ws";
+import http from "http";
 import { prisma } from "@repo/db/prisma";
 import { jwt } from "@repo/jwt/config";
 import {
@@ -12,7 +13,19 @@ import path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 const PORT = process.env.WS_PORT || 8080;
-const wss = new WebSocketServer({ port: Number(PORT) });
+
+const server = http.createServer((req, res) => {
+  if (req.url === "/health" && req.method === "GET") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "ok", timestamp: Date.now() }));
+    return;
+  }
+
+  res.writeHead(404);
+  res.end();
+});
+
+const wss = new WebSocketServer({ server });
 
 type User = {
   userId: string;
@@ -132,6 +145,11 @@ wss.on("connection", (ws, req) => {
       ws.send(
         JSON.stringify({ type: "ERROR", message: "Invalid message format" })
       );
+      return;
+    }
+
+    if (parsedData.type === "PING") {
+      ws.send(JSON.stringify({ type: "PONG" }));
       return;
     }
 
@@ -302,4 +320,6 @@ wss.on("connection", (ws, req) => {
   });
 });
 
-console.log(`WebSocket server running on port ${PORT}`);
+server.listen(Number(PORT), () => {
+  console.log(`WebSocket server running on port ${PORT}`);
+});

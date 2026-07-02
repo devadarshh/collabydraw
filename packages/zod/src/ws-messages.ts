@@ -6,7 +6,8 @@ export type ClientMessage =
   | { type: "JOIN_ROOM"; roomId: string }
   | { type: "LEAVE_ROOM"; roomId: string }
   | { type: "CREATE_SHAPE"; roomId: string; shape: FabricShapeJSON }
-  | { type: "DELETE_SHAPE"; roomId: string; shapeId: string };
+  | { type: "DELETE_SHAPE"; roomId: string; shapeId: string }
+  | { type: "PING" };
 
 export type ServerMessage =
   | {
@@ -31,6 +32,7 @@ export type ServerMessage =
   | { type: "NEW_SHAPE"; shape: FabricShapeJSON }
   | { type: "LOAD_SHAPES"; shapes: FabricShapeJSON[] }
   | { type: "DELETE_SHAPE"; shapeId: string }
+  | { type: "PONG" }
   | { type: "ERROR"; message: string };
 
 export function parseShapeMessage(message: unknown): FabricShapeJSON {

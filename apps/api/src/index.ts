@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import path from "path";
 
 import authRoutes from "./router/auth.route";
+import healthRoutes from "./router/health.route";
 import roomRoutes from "./router/room.router";
 
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
@@ -38,6 +39,7 @@ app.use(
 
 app.use(express.json());
 
+app.use("/api/v1", healthRoutes);
 app.use("/api/v1/", authRoutes);
 app.use("/api/v1/rooms", roomRoutes);
 

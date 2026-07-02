@@ -4,6 +4,7 @@ services:
     runtime: node
     buildCommand: pnpm install --frozen-lockfile && pnpm --filter api build
     startCommand: pnpm --filter api start
+    healthCheckPath: /api/v1/health
     envVars:
       - key: NODE_VERSION
         value: 20

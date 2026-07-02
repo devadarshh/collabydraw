@@ -15,6 +15,7 @@ import { useShortcutKeys } from "@/hooks/canvas/useKeyboardShortcuts";
 import { useHandleAddShapes } from "@/hooks/canvas/useHandleAddShapes";
 import { useGrabMode } from "@/hooks/canvas/useGrabMode";
 import { useWebSocketManager } from "@/hooks/websocket/useWebSocketManager";
+import { useWsKeepAlive } from "@/hooks/websocket/useWsKeepAlive";
 import { useWsStore } from "@/hooks/websocket/useWsStore";
 
 import { Toolbar } from "./ToolBar";
@@ -186,10 +187,11 @@ function CanvasBoardContent() {
   useDeleteListener(canvas, selectedTool);
 
   useWebSocketManager();
+  useWsKeepAlive();
 
   return (
     <div className="relative w-full h-full">
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] sm:w-auto max-w-lg flex justify-center px-2 sm:px-0 cursor-pointer">
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 w-[95%] sm:w-auto max-w-lg flex justify-center px-2 sm:px-0">
         <Toolbar activeTool={activeTool} onToolChange={handleShapeSelect} />
       </div>
       <CanvasSidebar
