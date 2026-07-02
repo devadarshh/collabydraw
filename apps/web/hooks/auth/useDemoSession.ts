@@ -16,6 +16,8 @@ interface GuestSessionResponse {
   roomId: string;
 }
 
+const guestJoinInFlightByRoom = new Map<string, Promise<string>>();
+
 export function useDemoSession() {
   const router = useRouter();
   const { enterDemoMode, isLoggedIn, isGuest } = useAuthStore();
@@ -75,8 +77,14 @@ export function useDemoSession() {
 
   const joinAsGuest = useCallback(
     async (roomId: string) => {
-      const sessionRoomId = await createGuestSession(roomId);
-      return sessionRoomId;
+      const inFlight = guestJoinInFlightByRoom.get(roomId);
+      if (inFlight) return inFlight;
+
+      const promise = createGuestSession(roomId).finally(() => {
+        guestJoinInFlightByRoom.delete(roomId);
+      });
+      guestJoinInFlightByRoom.set(roomId, promise);
+      return promise;
     },
     [createGuestSession]
   );

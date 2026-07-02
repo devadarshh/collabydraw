@@ -86,9 +86,9 @@ function authUser(token: string) {
 function getCurrentParticipantsInRoom(roomId: string): Participant[] {
   const room = rooms.find((r) => r.roomId === roomId);
   if (!room) return [];
-  return room.users
-    .filter((u) => u.ws.readyState === WebSocket.OPEN)
-    .map((u) => ({ userId: u.userId, userName: u.userName }));
+
+  room.users = room.users.filter((u) => u.ws.readyState === WebSocket.OPEN);
+  return room.users.map((u) => ({ userId: u.userId, userName: u.userName }));
 }
 
 function broadcastToRoom(
@@ -212,6 +212,14 @@ wss.on("connection", (ws, req) => {
       const isNewJoiner = existingUserIndex < 0;
 
       if (existingUserIndex >= 0) {
+        const previous = room.users[existingUserIndex]!;
+        if (previous.ws !== user.ws) {
+          try {
+            previous.ws.close(4000, "Replaced by new connection");
+          } catch {
+            // Previous socket may already be closed.
+          }
+        }
         room.users[existingUserIndex] = user;
       } else {
         room.users.push(user);

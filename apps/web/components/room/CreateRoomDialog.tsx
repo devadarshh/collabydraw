@@ -27,7 +27,7 @@ const BASE_RECONNECT_DELAY_MS = 1000;
 
 function CreateRoomDialogContent() {
   const { open, setOpen } = useRoomDialog();
-  const { token } = useAuthStore();
+  const { token, _hasHydrated } = useAuthStore();
   const { joinAsGuest } = useDemoSession();
   const {
     ws,
@@ -77,6 +77,17 @@ function CreateRoomDialogContent() {
 
       const currentToken = useAuthStore.getState().token;
       if (!currentToken) return;
+
+      const existingWs = useWsStore.getState().ws;
+      if (
+        existingWs &&
+        (existingWs.readyState === WebSocket.OPEN ||
+          existingWs.readyState === WebSocket.CONNECTING)
+      ) {
+        intentionalLeaveRef.current = true;
+        existingWs.close();
+        setWs(null);
+      }
 
       const generationAtConnect = useWsStore.getState().connectionGeneration;
       connectionGenerationRef.current = generationAtConnect;
@@ -192,6 +203,7 @@ function CreateRoomDialogContent() {
   }, [roomFromUrl, setOpen, clearLeaveGuards]);
 
   useEffect(() => {
+    if (!_hasHydrated) return;
     if (!roomFromUrl || autoJoinDisabled || declinedRoomId === roomFromUrl) {
       return;
     }
@@ -215,6 +227,7 @@ function CreateRoomDialogContent() {
         });
     }
   }, [
+    _hasHydrated,
     roomFromUrl,
     token,
     isInRoom,
@@ -234,6 +247,34 @@ function CreateRoomDialogContent() {
 
   useEffect(() => {
     return () => clearReconnectTimer();
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const { ws: activeWs, roomId: activeRoomId, isInRoom: inRoom } =
+        useWsStore.getState();
+      if (
+        !inRoom ||
+        !activeRoomId ||
+        !activeWs ||
+        activeWs.readyState !== WebSocket.OPEN
+      ) {
+        return;
+      }
+
+      intentionalLeaveRef.current = true;
+      try {
+        activeWs.send(
+          JSON.stringify({ type: "LEAVE_ROOM", roomId: activeRoomId })
+        );
+      } catch {
+        // Tab is closing.
+      }
+      activeWs.close();
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
   const handleStartSession = async () => {
