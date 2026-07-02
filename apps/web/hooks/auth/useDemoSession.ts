@@ -46,7 +46,9 @@ export function useDemoSession() {
       if (isLoading) return;
 
       if (isLoggedIn && !isGuest) {
-        setOpen(true);
+        toast.info(
+          "You're logged in. Open Settings and use Live Collaboration to start a session."
+        );
         return;
       }
 

@@ -134,6 +134,24 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
     }
   };
 
+  const canUseLiveCollaboration = isLoggedIn && !isGuest;
+
+  const handleLiveCollaboration = () => {
+    if (!canUseLiveCollaboration) {
+      if (isGuest) {
+        toast.info(
+          "Live Collaboration requires a logged-in account. You're in demo mode — create an account or use Try Demo to keep collaborating as a guest."
+        );
+      } else {
+        toast.info(
+          "Please log in to use Live Collaboration. To try without an account, click Try Demo."
+        );
+      }
+      return;
+    }
+    setOpen(true);
+  };
+
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
 
   const handleImportClick = () => {
@@ -395,9 +413,16 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
 
         <section>
           <SectionTitle>Sharing</SectionTitle>
+          {!canUseLiveCollaboration && (
+            <p className="text-xs text-[#666] dark:text-[#aaa] mb-2 leading-relaxed">
+              Live Collaboration requires a logged-in account. To try without
+              signing in, click <span className="font-semibold">Try Demo</span>{" "}
+              above.
+            </p>
+          )}
           <div className="flex flex-col gap-2">
             <button
-              onClick={() => setOpen(true)}
+              onClick={handleLiveCollaboration}
               className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer"
             >
               <Users className="w-4 h-4 text-[#605ebc]" />

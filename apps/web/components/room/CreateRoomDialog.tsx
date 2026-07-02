@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
+import Link from "next/link";
 import { Button } from "../ui/button";
 import { Play, XCircle } from "lucide-react";
 import {
@@ -27,7 +28,7 @@ const BASE_RECONNECT_DELAY_MS = 1000;
 
 function CreateRoomDialogContent() {
   const { open, setOpen } = useRoomDialog();
-  const { token, _hasHydrated } = useAuthStore();
+  const { token, isLoggedIn, isGuest, _hasHydrated } = useAuthStore();
   const { joinAsGuest } = useDemoSession();
   const {
     ws,
@@ -303,23 +304,17 @@ function CreateRoomDialogContent() {
   }, []);
 
   const handleStartSession = async () => {
+    if (!isLoggedIn || isGuest) {
+      toast.error(
+        "Please log in to start Live Collaboration. To try without an account, click Try Demo."
+      );
+      setOpen(false);
+      return;
+    }
+
     clearLeaveGuards();
     guestJoinAttempted.current = false;
     autoJoinRoomRef.current = null;
-
-    if (!token) {
-      try {
-        const roomId = await joinAsGuest();
-        joinRoom(roomId);
-      } catch (err: unknown) {
-        const message =
-          axios.isAxiosError(err) && err.response?.data?.message
-            ? String(err.response.data.message)
-            : "Failed to start demo session";
-        toast.error(message);
-      }
-      return;
-    }
 
     try {
       const res = await axios.post(
@@ -367,21 +362,33 @@ function CreateRoomDialogContent() {
             Live Collaboration
           </DialogTitle>
           <p className="text-center text-sm sm:text-base leading-relaxed text-gray-600 dark:text-gray-300">
-            Invite people to collaborate in real-time. No account needed for
-            demo — share the room link and draw together.
+            {isLoggedIn && !isGuest
+              ? "Invite people to collaborate in real-time. Share the room link and draw together."
+              : "Live Collaboration is available for logged-in users. To try without an account, close this and click Try Demo in Settings."}
           </p>
         </DialogHeader>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           {!isInRoom ? (
-            <Button
-              onClick={handleStartSession}
-              size="lg"
-              className="w-full sm:w-auto py-3 px-6 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
-            >
-              <Play className="w-5 h-5 mr-2" />
-              Start Session
-            </Button>
+            isLoggedIn && !isGuest ? (
+              <Button
+                onClick={handleStartSession}
+                size="lg"
+                className="w-full sm:w-auto py-3 px-6 rounded-lg text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 cursor-pointer"
+              >
+                <Play className="w-5 h-5 mr-2" />
+                Start Session
+              </Button>
+            ) : (
+              <p className="text-center text-sm text-gray-600 dark:text-gray-300">
+                Please{" "}
+                <Link href="/auth/signin" className="text-[#605ebc] font-semibold underline">
+                  log in
+                </Link>{" "}
+                to start a session, or use{" "}
+                <span className="font-semibold">Try Demo</span> in Settings.
+              </p>
+            )
           ) : (
             <>
               <Button
