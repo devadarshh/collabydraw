@@ -13,7 +13,9 @@ import path from "path";
 dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 function resolvePort(): number {
-  const rawPort = process.env.PORT ?? process.env.WS_PORT;
+  // Prefer WS_PORT locally so we don't collide with the API on PORT=9000.
+  // On Render, only PORT is set by the platform.
+  const rawPort = process.env.WS_PORT ?? process.env.PORT;
   if (!rawPort) return 8080;
 
   const port = Number.parseInt(rawPort, 10);
@@ -56,6 +58,9 @@ type Room = {
 
 let users: User[] = [];
 let rooms: Room[] = [];
+const disconnectGraceMs = 5000;
+const disconnectTimers = new Map<WebSocket, ReturnType<typeof setTimeout>>();
+const recentRoomMembers = new Map<string, Map<string, number>>();
 
 if (!process.env.JWT_SECRET_KEY) {
   throw new Error("JWT_SECRET_KEY is ABSOLUTELY REQUIRED");
@@ -98,15 +103,44 @@ function broadcastToRoom(
 ) {
   const room = rooms.find((r) => r.roomId === roomId);
   if (!room) return;
+
+  room.users = room.users.filter((u) => u.ws.readyState === WebSocket.OPEN);
   const payload = JSON.stringify(message);
   room.users.forEach((u) => {
     if (excludeUserId && u.userId === excludeUserId) return;
-    if (u.ws.readyState === WebSocket.OPEN) {
-      u.ws.send(payload);
-    }
+    u.ws.send(payload);
   });
 }
 
+function markRecentMember(roomId: string, userId: string) {
+  if (!recentRoomMembers.has(roomId)) {
+    recentRoomMembers.set(roomId, new Map());
+  }
+  recentRoomMembers.get(roomId)!.set(userId, Date.now());
+}
+
+function wasRecentMember(roomId: string, userId: string): boolean {
+  const seenAt = recentRoomMembers.get(roomId)?.get(userId);
+  if (!seenAt) return false;
+  return Date.now() - seenAt < disconnectGraceMs;
+}
+
+function clearDisconnectTimer(ws: WebSocket) {
+  const timer = disconnectTimers.get(ws);
+  if (timer) {
+    clearTimeout(timer);
+    disconnectTimers.delete(ws);
+  }
+}
+
+function scheduleRemoveUserFromRoom(user: User, connectionRoomId: string) {
+  clearDisconnectTimer(user.ws);
+  const timer = setTimeout(() => {
+    disconnectTimers.delete(user.ws);
+    removeUserFromRoom(user, connectionRoomId);
+  }, disconnectGraceMs);
+  disconnectTimers.set(user.ws, timer);
+}
 function removeUserFromRoom(user: User, connectionRoomId: string) {
   const room = rooms.find((r) => r.roomId === connectionRoomId);
   if (!room) return;
@@ -118,6 +152,7 @@ function removeUserFromRoom(user: User, connectionRoomId: string) {
 
   room.users = room.users.filter((u) => u.ws !== user.ws);
   user.roomId = null;
+  markRecentMember(connectionRoomId, user.userId);
 
   if (room.admin === user.userId && room.users.length > 0) {
     room.admin = room.users[0]!.userId;
@@ -134,6 +169,101 @@ function removeUserFromRoom(user: User, connectionRoomId: string) {
     userName: user.userName,
     participants,
   });
+}
+
+async function joinUserToRoom(
+  user: User,
+  roomId: string,
+  options?: { resync?: boolean }
+): Promise<boolean> {
+  const alreadyJoined =
+    user.roomId === roomId &&
+    rooms
+      .find((r) => r.roomId === roomId)
+      ?.users.some((u) => u.ws === user.ws);
+
+  if (alreadyJoined && !options?.resync) {
+    return true;
+  }
+
+  const isRoomExist = await prisma.room.findUnique({
+    where: { id: roomId },
+  });
+  if (!isRoomExist) {
+    user.ws.send(
+      JSON.stringify({ type: "ERROR", message: "Room does not exist" })
+    );
+    return false;
+  }
+
+  let room = rooms.find((r) => r.roomId === roomId);
+
+  if (!room) {
+    room = {
+      roomId,
+      users: [],
+      admin: user.userId,
+      createdAt: Date.now(),
+    };
+    rooms.push(room);
+    console.log(`${user.userName} is admin of new room ${roomId}`);
+  }
+
+  const existingUserIndex = room.users.findIndex(
+    (u) => u.userId === user.userId
+  );
+  const isReconnect = wasRecentMember(roomId, user.userId);
+  const isNewJoiner = existingUserIndex < 0 && !isReconnect;
+
+  if (existingUserIndex >= 0) {
+    room.users[existingUserIndex] = user;
+  } else {
+    room.users.push(user);
+  }
+  user.roomId = roomId;
+  clearDisconnectTimer(user.ws);
+
+  user.ws.send(
+    JSON.stringify({
+      type: "ROOM_JOINED",
+      roomId,
+      message: "Room Joined Successfully",
+      participants: getCurrentParticipantsInRoom(roomId),
+    })
+  );
+
+  const existingShapes = await prisma.shape.findMany({
+    where: { roomId },
+  });
+  user.ws.send(
+    JSON.stringify({
+      type: "LOAD_SHAPES",
+      shapes: existingShapes.map((s) => parseShapeMessage(s.message)),
+    })
+  );
+
+  if (isNewJoiner) {
+    broadcastToRoom(
+      roomId,
+      {
+        type: "USER_JOINED",
+        userId: user.userId,
+        userName: user.userName,
+        participants: getCurrentParticipantsInRoom(roomId),
+      },
+      user.userId
+    );
+    console.log(`${user.userName} joined room ${roomId}`);
+  }
+
+  return true;
+}
+
+async function ensureUserInRoom(user: User, roomId: string): Promise<boolean> {
+  if (user.roomId === roomId) {
+    return true;
+  }
+  return joinUserToRoom(user, roomId);
 }
 
 wss.on("connection", (ws, req) => {
@@ -159,6 +289,11 @@ wss.on("connection", (ws, req) => {
   };
   users.push(user);
 
+  const pendingJoin = joinUserToRoom(user, connectionRoomId).catch((error) => {
+    console.error("Auto-join failed:", error);
+    return false;
+  });
+
   ws.on("message", async (data) => {
     let parsedData: ClientMessage;
     try {
@@ -183,82 +318,7 @@ wss.on("connection", (ws, req) => {
         return;
       }
 
-      const isRoomExist = await prisma.room.findUnique({
-        where: { id: connectionRoomId },
-      });
-      if (!isRoomExist) {
-        ws.send(
-          JSON.stringify({ type: "ERROR", message: "Room does not exist" })
-        );
-        return;
-      }
-
-      let room = rooms.find((r) => r.roomId === connectionRoomId);
-
-      if (!room) {
-        room = {
-          roomId: connectionRoomId,
-          users: [],
-          admin: user.userId,
-          createdAt: Date.now(),
-        };
-        rooms.push(room);
-        console.log(`${user.userName} is admin of new room ${connectionRoomId}`);
-      }
-
-      const existingUserIndex = room.users.findIndex(
-        (u) => u.userId === user.userId
-      );
-      const isNewJoiner = existingUserIndex < 0;
-
-      if (existingUserIndex >= 0) {
-        const previous = room.users[existingUserIndex]!;
-        if (previous.ws !== user.ws) {
-          try {
-            previous.ws.close(4000, "Replaced by new connection");
-          } catch {
-            // Previous socket may already be closed.
-          }
-        }
-        room.users[existingUserIndex] = user;
-      } else {
-        room.users.push(user);
-      }
-      user.roomId = connectionRoomId;
-
-      ws.send(
-        JSON.stringify({
-          type: "ROOM_JOINED",
-          roomId: connectionRoomId,
-          message: "Room Joined Successfully",
-          participants: getCurrentParticipantsInRoom(connectionRoomId),
-        })
-      );
-
-      const existingShapes = await prisma.shape.findMany({
-        where: { roomId: connectionRoomId },
-      });
-      ws.send(
-        JSON.stringify({
-          type: "LOAD_SHAPES",
-          shapes: existingShapes.map((s) => parseShapeMessage(s.message)),
-        })
-      );
-
-      if (isNewJoiner) {
-        broadcastToRoom(
-          connectionRoomId,
-          {
-            type: "USER_JOINED",
-            userId: user.userId,
-            userName: user.userName,
-            participants: getCurrentParticipantsInRoom(connectionRoomId),
-          },
-          user.userId
-        );
-      }
-
-      console.log(`${user.userName} joined room ${connectionRoomId}`);
+      await joinUserToRoom(user, connectionRoomId, { resync: true });
       return;
     }
 
@@ -270,6 +330,7 @@ wss.on("connection", (ws, req) => {
         return;
       }
 
+      clearDisconnectTimer(user.ws);
       removeUserFromRoom(user, connectionRoomId);
 
       ws.send(
@@ -291,10 +352,9 @@ wss.on("connection", (ws, req) => {
         );
         return;
       }
-      if (!user.roomId || user.roomId !== connectionRoomId) {
-        ws.send(
-          JSON.stringify({ type: "ERROR", message: "Join the room first" })
-        );
+
+      await pendingJoin;
+      if (!(await ensureUserInRoom(user, connectionRoomId))) {
         return;
       }
 
@@ -317,7 +377,8 @@ wss.on("connection", (ws, req) => {
         },
       });
 
-      broadcastToRoom(connectionRoomId, { type: "NEW_SHAPE", shape });
+      const newShapeMessage = { type: "NEW_SHAPE" as const, shape };
+      broadcastToRoom(connectionRoomId, newShapeMessage);
       return;
     }
 
@@ -328,10 +389,9 @@ wss.on("connection", (ws, req) => {
         );
         return;
       }
-      if (!user.roomId || user.roomId !== connectionRoomId) {
-        ws.send(
-          JSON.stringify({ type: "ERROR", message: "Join the room first" })
-        );
+
+      await pendingJoin;
+      if (!(await ensureUserInRoom(user, connectionRoomId))) {
         return;
       }
 
@@ -351,7 +411,7 @@ wss.on("connection", (ws, req) => {
   ws.on("close", () => {
     users = users.filter((u) => u !== user);
     if (user.roomId) {
-      removeUserFromRoom(user, user.roomId);
+      scheduleRemoveUserFromRoom(user, user.roomId);
     }
   });
 });

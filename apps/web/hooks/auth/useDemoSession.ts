@@ -76,14 +76,15 @@ export function useDemoSession() {
   );
 
   const joinAsGuest = useCallback(
-    async (roomId: string) => {
-      const inFlight = guestJoinInFlightByRoom.get(roomId);
+    async (roomId?: string) => {
+      const key = roomId ?? "__new_demo__";
+      const inFlight = guestJoinInFlightByRoom.get(key);
       if (inFlight) return inFlight;
 
       const promise = createGuestSession(roomId).finally(() => {
-        guestJoinInFlightByRoom.delete(roomId);
+        guestJoinInFlightByRoom.delete(key);
       });
-      guestJoinInFlightByRoom.set(roomId, promise);
+      guestJoinInFlightByRoom.set(key, promise);
       return promise;
     },
     [createGuestSession]

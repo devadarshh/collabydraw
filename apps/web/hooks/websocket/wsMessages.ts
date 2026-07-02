@@ -20,6 +20,7 @@ export function sendCreateShape(
   roomId: string,
   shapeObject: CustomFabricObject
 ) {
+  if (ws.readyState !== WebSocket.OPEN) return;
   const shape = serializeShape(shapeObject);
   ws.send(JSON.stringify({ type: "CREATE_SHAPE", roomId, shape }));
 }
@@ -29,6 +30,7 @@ export function sendDeleteShape(
   roomId: string,
   shapeId: string
 ) {
+  if (ws.readyState !== WebSocket.OPEN) return;
   ws.send(JSON.stringify({ type: "DELETE_SHAPE", roomId, shapeId }));
 }
 
