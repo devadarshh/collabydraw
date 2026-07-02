@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useAuthStore } from "@/hooks/auth/useAuthStore";
 import { useWsStore } from "./useWsStore";
 
 export const intentionalLeaveRef = { current: false };
@@ -53,7 +54,14 @@ export function useLeaveRoom() {
     }
 
     leaveSession(activeRoomId);
-    toast.success("Left the room successfully!");
+
+    const wasGuest = useAuthStore.getState().isGuest;
+    if (wasGuest) {
+      useAuthStore.getState().logout();
+      toast.success("Demo ended");
+    } else {
+      toast.success("Left the room successfully!");
+    }
   }, [ws, roomId, isInRoom, router, leaveSession]);
 
   return {

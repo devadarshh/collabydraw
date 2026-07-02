@@ -17,6 +17,8 @@ import {
   LogOut,
   Circle,
   Sparkles,
+  Copy,
+  Link2,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -86,6 +88,7 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [hexInput, setHexInput] = useState(backgroundColor);
+  const [shareUrl, setShareUrl] = useState("");
   const pendingFileRef = useRef<File | null>(null);
 
   const colorOptions = ["#ffffff", "#f0f0f0", "#121212", "#fef3c7", "#d1fae5"];
@@ -93,6 +96,24 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
   useEffect(() => {
     setHexInput(backgroundColor);
   }, [backgroundColor]);
+
+  useEffect(() => {
+    if (isInRoom && roomId) {
+      setShareUrl(`${window.location.origin}/?room=${roomId}`);
+    } else {
+      setShareUrl("");
+    }
+  }, [isInRoom, roomId]);
+
+  const handleCopyShareLink = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Room link copied! Share it with a friend.");
+    } catch {
+      toast.error("Failed to copy link");
+    }
+  };
 
   const handleLogout = () => {
     if (isInRoom) {
@@ -263,6 +284,29 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
                 </li>
               ))}
             </ul>
+            <div className="mb-3">
+              <p className="text-xs text-[#555] dark:text-[#bbb] mb-1.5 flex items-center gap-1">
+                <Link2 className="w-3 h-3" />
+                Share with friends
+              </p>
+              <div className="flex items-center gap-1">
+                <Input
+                  readOnly
+                  value={shareUrl}
+                  className="text-xs flex-1 border border-[#605ebc33] bg-white dark:bg-[#2a2a2a] truncate"
+                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                />
+                <Button
+                  onClick={handleCopyShareLink}
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 border-[#605ebc] text-[#605ebc] hover:bg-[#8d8bd622] cursor-pointer"
+                  aria-label="Copy room link"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
             <Button
               onClick={leaveRoom}
               variant="outline"
