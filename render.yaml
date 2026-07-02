@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: collabydraw-api
+    runtime: node
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter api build
+    startCommand: pnpm --filter api start
+    envVars:
+      - key: NODE_VERSION
+        value: 20

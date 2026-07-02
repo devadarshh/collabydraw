@@ -1,14 +1,9 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-# Go to monorepo root
-cd ..
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-# Install pnpm globally
-npm install -g pnpm
-
-# Install all dependencies in the workspace
+cd "$ROOT_DIR"
 pnpm install --frozen-lockfile
-
-# Build the API
-cd apps/api
-pnpm run build
+pnpm --filter api build
