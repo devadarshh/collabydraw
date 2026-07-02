@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -91,9 +92,8 @@ const RegisterPage: React.FC = () => {
 
           <div className="flex flex-col space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               placeholder="Enter a password"
               value={formData.password}
               onChange={handleChange}

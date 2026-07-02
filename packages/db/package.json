@@ -10,7 +10,10 @@
     "@repo/typescript-config": "workspace:*"
   },
   "scripts": {
-    "postinstall": "prisma generate --schema=prisma/schema.prisma"
+    "postinstall": "prisma generate --schema=prisma/schema.prisma",
+    "db:push": "prisma db push --schema=prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema=prisma/schema.prisma",
+    "db:generate": "prisma generate --schema=prisma/schema.prisma"
   },
   "keywords": [],
   "author": "",

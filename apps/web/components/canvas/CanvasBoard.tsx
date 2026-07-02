@@ -156,7 +156,11 @@ function CanvasBoardContent() {
     handleAddShapes(tool);
   };
 
-  useShortcutKeys({ handleAddShapes: handleShapeSelect });
+  useShortcutKeys({
+    handleAddShapes: handleShapeSelect,
+    activeTool,
+    canvas,
+  });
   useCanvasTheme({ canvas });
   useGrabMode({ canvas, mode });
   useDrawShapes({

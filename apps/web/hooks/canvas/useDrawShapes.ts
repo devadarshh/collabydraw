@@ -10,6 +10,7 @@ import {
   removeObjectFromCanvas,
   type CustomFabricObject,
 } from "../websocket/wsMessages";
+import { findEraserTarget } from "./canvasHitTest";
 
 interface UseDrawShapesProps {
   canvas: fabric.Canvas | null;
@@ -121,7 +122,7 @@ export function useDrawShapes({
       const pointer = canvas.getPointer(opt.e);
 
       if (mode === "eraser") {
-        const target = canvas.findTarget(opt.e) as CustomFabricObject | undefined;
+        const target = findEraserTarget(canvas, opt.e);
         if (target) removeShape(target);
         return;
       }
@@ -222,10 +223,7 @@ export function useDrawShapes({
               { x: 0, y: 0 },
               { x: 0, y: 0 },
             ],
-            {
-              ...commonProps,
-              perPixelTargetFind: true,
-            }
+            commonProps
           );
           break;
       }
