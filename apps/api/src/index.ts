@@ -1,11 +1,12 @@
 import express, { Application } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import path from "path";
 
 import authRoutes from "./router/auth.route";
 import roomRoutes from "./router/room.router";
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 const app: Application = express();
 

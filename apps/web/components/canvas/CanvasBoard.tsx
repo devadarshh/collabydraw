@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import * as fabric from "fabric";
 import { useTheme } from "next-themes";
+import { useSearchParams } from "next/navigation";
 import throttle from "lodash/throttle";
 import { debounce } from "lodash";
 
@@ -14,18 +15,24 @@ import { useShortcutKeys } from "@/hooks/canvas/useKeyboardShortcuts";
 import { useHandleAddShapes } from "@/hooks/canvas/useHandleAddShapes";
 import { useGrabMode } from "@/hooks/canvas/useGrabMode";
 import { useWebSocketManager } from "@/hooks/websocket/useWebSocketManager";
+import { useWsStore } from "@/hooks/websocket/useWsStore";
 
 import { Toolbar } from "./ToolBar";
 import { CanvasSidebar } from "./CanvasSideBar";
 
-import { applyFabricConfig } from "@/config/fabricConfig";
+import { applyFabricConfig, loadExcalifont } from "@/config/fabricConfig";
 import { ShapeType } from "@/types/tools";
 import { useDeleteListener } from "@/hooks/canvas/useDeleteListener";
 
-const CanvasBoard: React.FC = () => {
+const LOCAL_CANVAS_KEY = "fabric-canvas-local";
+
+function CanvasBoardContent() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { canvas, setCanvas } = useCanvasStore();
   const { resolvedTheme } = useTheme();
+  const { isConnected } = useWsStore();
+  const searchParams = useSearchParams();
+  const roomFromUrl = searchParams.get("room");
 
   const [zoom, setZoom] = useState(100);
   const [mode, setMode] = useState<
@@ -33,12 +40,14 @@ const CanvasBoard: React.FC = () => {
   >("select");
   const [activeTool, setActiveTool] = useState<ShapeType>("select");
   const [drawingShape, setDrawingShape] = useState<ShapeType | null>("select");
-  const [tempShape, setTempShape] = useState<fabric.Object | null>(null);
+  const [tempShape, setTempShape] = useState<fabric.FabricObject | null>(null);
   const startPoint = useRef<{ x: number; y: number } | null>(null);
 
   const [showSidebar, setShowSidebar] = useState(false);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [selectedTool, setSelectedTool] = useState<ShapeType>("select");
+
+  const shouldUseLocalStorage = !isConnected && !roomFromUrl;
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -54,16 +63,23 @@ const CanvasBoard: React.FC = () => {
     applyFabricConfig(initCanvas);
     setCanvas(initCanvas);
 
-    const savedCanvas = localStorage.getItem("fabric-canvas");
-    if (savedCanvas) {
-      initCanvas.loadFromJSON(savedCanvas, () => {
-        setTimeout(() => initCanvas.renderAll(), 0);
-      });
+    void loadExcalifont().then(() => {
+      initCanvas.requestRenderAll();
+    });
+
+    if (shouldUseLocalStorage) {
+      const savedCanvas = localStorage.getItem(LOCAL_CANVAS_KEY);
+      if (savedCanvas) {
+        initCanvas.loadFromJSON(savedCanvas, () => {
+          setTimeout(() => initCanvas.renderAll(), 0);
+        });
+      }
     }
 
     const saveCanvasToLocal = throttle(() => {
+      if (!shouldUseLocalStorage) return;
       localStorage.setItem(
-        "fabric-canvas",
+        LOCAL_CANVAS_KEY,
         JSON.stringify(initCanvas.toJSON())
       );
     }, 500);
@@ -89,7 +105,7 @@ const CanvasBoard: React.FC = () => {
       handleResize.cancel();
       initCanvas.dispose();
     };
-  }, [resolvedTheme, setCanvas]);
+  }, [resolvedTheme, setCanvas, shouldUseLocalStorage]);
 
   const handleAddShapes = useHandleAddShapes({
     canvas,
@@ -173,9 +189,14 @@ const CanvasBoard: React.FC = () => {
         setZoom={setZoom}
       />
       <canvas ref={canvasRef} className="w-full h-full" />
-      addDeleteListner(canvas)
     </div>
   );
 };
 
-export default CanvasBoard;
+export default function CanvasBoard() {
+  return (
+    <Suspense fallback={null}>
+      <CanvasBoardContent />
+    </Suspense>
+  );
+}

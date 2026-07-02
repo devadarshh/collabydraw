@@ -2,6 +2,14 @@ import { FabricObject, Textbox, type Canvas } from "fabric";
 
 FabricObject.customProperties = ["id"];
 
+export const loadExcalifont = () => {
+  if (typeof document === "undefined") {
+    return Promise.resolve();
+  }
+
+  return document.fonts.load('16px "Excalifont"');
+};
+
 /**
  * @param canvas
  */

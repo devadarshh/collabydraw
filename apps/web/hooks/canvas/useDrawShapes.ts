@@ -1,19 +1,15 @@
 "use client";
 
-import { useEffect, Dispatch, SetStateAction } from "react";
+import { useEffect, useCallback, Dispatch, SetStateAction } from "react";
 import * as fabric from "fabric";
 import { ShapeType } from "@/types/tools";
 import { useCanvasProperties } from "./useCanvasProperties";
 import { useWsStore } from "../websocket/useWsStore";
-
-declare module "fabric" {
-  namespace fabric {
-    interface Object {
-      id?: string;
-    }
-  }
-}
-type CustomFabricObject = fabric.Object & { id?: string };
+import {
+  sendCreateShape,
+  removeObjectFromCanvas,
+  type CustomFabricObject,
+} from "../websocket/wsMessages";
 
 interface UseDrawShapesProps {
   canvas: fabric.Canvas | null;
@@ -45,15 +41,22 @@ export function useDrawShapes({
   } = useCanvasProperties();
   const { ws, isConnected, roomId } = useWsStore();
 
-  const sendShapeToServer = (shapeObject: CustomFabricObject) => {
-    if (ws && isConnected && roomId && shapeObject) {
-      if (!shapeObject.id) shapeObject.id = crypto.randomUUID();
-      const shapeJSON = shapeObject.toJSON();
-      ws.send(
-        JSON.stringify({ type: "CREATE_SHAPE", roomId, shape: shapeJSON })
-      );
-    }
-  };
+  const sendShapeToServer = useCallback(
+    (shapeObject: CustomFabricObject) => {
+      if (ws && isConnected && roomId && shapeObject) {
+        sendCreateShape(ws, roomId, shapeObject);
+      }
+    },
+    [ws, isConnected, roomId]
+  );
+
+  const removeShape = useCallback(
+    (target: CustomFabricObject) => {
+      if (!canvas) return;
+      removeObjectFromCanvas(canvas, target, { ws, roomId, isConnected });
+    },
+    [canvas, ws, roomId, isConnected]
+  );
 
   useEffect(() => {
     if (!canvas) return;
@@ -65,9 +68,9 @@ export function useDrawShapes({
   }, [canvas, mode, strokeColor, strokeWidth]);
 
   useEffect(() => {
-    if (!canvas) return;
-    const active = canvas.getActiveObject();
-    if (!active) return;
+    if (!canvas || !isConnected || !roomId) return;
+    const active = canvas.getActiveObject() as CustomFabricObject | undefined;
+    if (!active?.id) return;
 
     if (active.type === "i-text" || active.type === "textbox") {
       const textObj = active as fabric.IText;
@@ -93,6 +96,8 @@ export function useDrawShapes({
     sendShapeToServer(active);
   }, [
     canvas,
+    isConnected,
+    roomId,
     strokeColor,
     fillColor,
     strokeWidth,
@@ -113,11 +118,11 @@ export function useDrawShapes({
 
     const handleMouseDown = (opt: fabric.TEvent<fabric.TPointerEvent>) => {
       if (!canvas) return;
-      const pointer = canvas.getPointer(opt.e as MouseEvent);
+      const pointer = canvas.getPointer(opt.e);
 
       if (mode === "eraser") {
-        const target = canvas.findTarget(opt.e as MouseEvent);
-        if (target) canvas.remove(target);
+        const target = canvas.findTarget(opt.e) as CustomFabricObject | undefined;
+        if (target) removeShape(target);
         return;
       }
 
@@ -140,6 +145,7 @@ export function useDrawShapes({
         fill: fillColor,
         opacity: opacity / 100,
         selectable: false,
+        evented: true,
         strokeDashArray: dashArray,
         objectCaching: false,
       };
@@ -197,14 +203,14 @@ export function useDrawShapes({
             fill: fillColor,
             stroke: fillColor,
             strokeWidth: 1,
-            textAlign: textAlign,
+            textAlign,
             opacity: opacity / 100,
             editable: true,
+            fontFamily,
           });
           canvas.add(text);
           canvas.setActiveObject(text);
           text.enterEditing();
-          sendShapeToServer(text);
           startPoint.current = null;
           setTempShape(null);
           break;
@@ -218,8 +224,6 @@ export function useDrawShapes({
             ],
             {
               ...commonProps,
-              selectable: true,
-              evented: true,
               perPixelTargetFind: true,
             }
           );
@@ -242,7 +246,7 @@ export function useDrawShapes({
       )
         return;
 
-      const pointer = canvas.getPointer(opt.e as MouseEvent);
+      const pointer = canvas.getPointer(opt.e);
       const { x, y } = startPoint.current;
 
       if (drawingShape === "rectangle" && tempShape instanceof fabric.Rect) {
@@ -283,18 +287,16 @@ export function useDrawShapes({
         const height = pointer.y - y;
         const left = width >= 0 ? x : pointer.x;
         const top = height >= 0 ? y : pointer.y;
-        if (tempShape) {
-          tempShape.set({
-            points: [
-              { x: width / 2, y: 0 },
-              { x: 0, y: height },
-              { x: width, y: height },
-            ],
-            left,
-            top,
-          });
-          tempShape.setCoords();
-        }
+        tempShape.set({
+          points: [
+            { x: width / 2, y: 0 },
+            { x: 0, y: height },
+            { x: width, y: height },
+          ],
+          left,
+          top,
+        });
+        tempShape.setCoords();
       }
 
       canvas.renderAll();
@@ -305,10 +307,10 @@ export function useDrawShapes({
 
       if (drawingShape === "arrow" && arrowLine && arrowHead) {
         const arrowGroup = new fabric.Group([arrowLine, arrowHead], {
-          id: crypto.randomUUID(),
           selectable: false,
           evented: true,
-        } as any & { id: string });
+        }) as CustomFabricObject;
+        arrowGroup.id = crypto.randomUUID();
         canvas.remove(arrowLine, arrowHead);
         canvas.add(arrowGroup);
         sendShapeToServer(arrowGroup);
@@ -325,23 +327,32 @@ export function useDrawShapes({
       canvas.renderAll();
     };
 
-    const handlePathCreated = (e: fabric.TEvent & { path: fabric.Path }) => {
+    const handlePathCreated = (e: fabric.TEvent & { path?: fabric.Path }) => {
       if (e.path) {
-        e.path.set({ opacity: opacity / 100 });
-        sendShapeToServer(e.path);
+        e.path.set({ opacity: opacity / 100, id: crypto.randomUUID() });
+        sendShapeToServer(e.path as CustomFabricObject);
+      }
+    };
+
+    const handleTextEditingExited = (e: fabric.TEvent & { target?: fabric.IText }) => {
+      const target = e.target as CustomFabricObject | undefined;
+      if (target) {
+        sendShapeToServer(target);
       }
     };
 
     canvas.on("mouse:down", handleMouseDown);
     canvas.on("mouse:move", handleMouseMove);
     canvas.on("mouse:up", handleMouseUp);
-    canvas.on("path:created", handlePathCreated as any);
+    canvas.on("path:created", handlePathCreated as never);
+    canvas.on("text:editing:exited", handleTextEditingExited as never);
 
     return () => {
       canvas.off("mouse:down", handleMouseDown);
       canvas.off("mouse:move", handleMouseMove);
       canvas.off("mouse:up", handleMouseUp);
-      canvas.off("path:created", handlePathCreated as any);
+      canvas.off("path:created", handlePathCreated as never);
+      canvas.off("text:editing:exited", handleTextEditingExited as never);
     };
   }, [
     canvas,
@@ -356,8 +367,8 @@ export function useDrawShapes({
     fontSize,
     textAlign,
     strokeStyle,
-    textColor,
     sendShapeToServer,
+    removeShape,
     startPoint,
     setTempShape,
   ]);

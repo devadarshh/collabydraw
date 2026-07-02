@@ -28,7 +28,7 @@ export const useCanvasProperties = create<CanvasProperties>((set) => ({
   fillColor: "#ffffff",
   strokeWidth: 2,
   opacity: 100,
-  fontFamily: "Assistant",
+  fontFamily: "Excalifont",
   fontSize: 36,
   textAlign: "left",
   strokeStyle: "solid",

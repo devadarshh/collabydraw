@@ -22,7 +22,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
           >
             <div className="w-7 h-7 md:w-8 md:h-8 rounded transform rotate-45 bg-white" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-wide font-[Bebas_Neue] text-[#8d8bd6]">
+          <h1 className="text-4xl md:text-5xl tracking-wide text-[#8d8bd6]">
             COLLABYDRAW
           </h1>
         </div>

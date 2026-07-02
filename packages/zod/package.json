@@ -1,12 +1,21 @@
 {
   "name": "@repo/zod",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "./dist/ws-messages.js",
+  "types": "./dist/ws-messages.d.ts",
   "exports": {
-    "./schema": "./src/schema.ts",
-    "./ws-messages": "./src/ws-messages.ts"
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "default": "./dist/schema.js"
+    },
+    "./ws-messages": {
+      "types": "./dist/ws-messages.d.ts",
+      "default": "./dist/ws-messages.js"
+    }
   },
-  "scripts": {},
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

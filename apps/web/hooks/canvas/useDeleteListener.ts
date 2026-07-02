@@ -1,22 +1,28 @@
 import { useEffect } from "react";
 import * as fabric from "fabric";
+import { useWsStore } from "../websocket/useWsStore";
+import {
+  removeObjectFromCanvas,
+  type CustomFabricObject,
+} from "../websocket/wsMessages";
 
 export function useDeleteListener(
   canvas: fabric.Canvas | null,
   selectedTool: string
 ): void {
+  const { ws, roomId, isConnected } = useWsStore();
+
   useEffect(() => {
     if (!canvas) return;
-    if (selectedTool == "text") return;
+    if (selectedTool === "text") return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Delete" || e.key === "Backspace") {
-        const activeObjects: fabric.Object[] = canvas.getActiveObjects();
+        const activeObjects = canvas.getActiveObjects() as CustomFabricObject[];
         if (activeObjects.length > 0) {
           activeObjects.forEach((object) => {
-            canvas.remove(object);
+            removeObjectFromCanvas(canvas, object, { ws, roomId, isConnected });
           });
-          canvas.discardActiveObject();
-          canvas.renderAll();
         }
       }
     };
@@ -25,5 +31,5 @@ export function useDeleteListener(
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [canvas,selectedTool]);
+  }, [canvas, selectedTool, ws, roomId, isConnected]);
 }

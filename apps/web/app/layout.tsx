@@ -12,6 +12,7 @@ const excalifont = localFont({
   weight: "400",
   style: "normal",
   display: "swap",
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -39,7 +40,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${excalifont.variable} antialiased bg-background text-foreground transition-colors duration-300`}
+        className={`${excalifont.variable} ${excalifont.className} antialiased bg-background text-foreground transition-colors duration-300`}
       >
         <ThemeProvider
           attribute={"class"}

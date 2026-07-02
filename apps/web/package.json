@@ -25,6 +25,7 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@repo/ui": "workspace:*",
+    "@repo/zod": "workspace:*",
     "@tailwindcss/postcss": "^4.1.12",
     "axios": "^1.11.0",
     "class-variance-authority": "^0.7.1",

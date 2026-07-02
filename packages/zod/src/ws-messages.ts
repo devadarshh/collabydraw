@@ -29,6 +29,9 @@ export type ServerMessage =
   | { type: "ERROR"; message: string };
 
 export function parseShapeMessage(message: unknown): FabricShapeJSON {
+  if (message == null) {
+    throw new Error("Shape message is empty");
+  }
   if (typeof message === "string") {
     return JSON.parse(message) as FabricShapeJSON;
   }

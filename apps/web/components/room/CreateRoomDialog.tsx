@@ -1,10 +1,9 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Button } from "../ui/button";
 import { Play, XCircle } from "lucide-react";
-import { useTheme } from "next-themes";
 import {
   Dialog,
   DialogContent,
@@ -18,16 +17,116 @@ import { useWsStore } from "@/hooks/websocket/useWsStore";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 
+const MAX_RECONNECT_ATTEMPTS = 5;
+const BASE_RECONNECT_DELAY_MS = 1000;
+
 function CreateRoomDialogContent() {
   const { open, setOpen } = useRoomDialog();
-  const { theme } = useTheme();
   const { isLoggedIn, token } = useAuthStore();
-  const { ws, isConnected, setIsConnected, setWs, setRoomId } = useWsStore();
+  const {
+    ws,
+    isConnected,
+    setIsConnected,
+    setWs,
+    setRoomId,
+    setParticipants,
+  } = useWsStore();
   const [localRoomId, setLocalRoomId] = useState<string>("");
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const roomFromUrl = searchParams.get("room");
+
+  const intentionalLeave = useRef(false);
+  const reconnectAttempts = useRef(0);
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const roomIdRef = useRef<string>("");
+
+  const clearReconnectTimer = () => {
+    if (reconnectTimer.current) {
+      clearTimeout(reconnectTimer.current);
+      reconnectTimer.current = null;
+    }
+  };
+
+  const connectWebSocket = useCallback(
+    (newRoomId: string) => {
+      if (!token) return;
+
+      const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080";
+      const websocket = new WebSocket(
+        `${wsUrl}?token=${token}&room=${newRoomId}`
+      );
+
+      websocket.onopen = () => {
+        reconnectAttempts.current = 0;
+        roomIdRef.current = newRoomId;
+        websocket.send(
+          JSON.stringify({ type: "JOIN_ROOM", roomId: newRoomId })
+        );
+        setIsConnected(true);
+        setWs(websocket);
+        setRoomId(newRoomId);
+        setLocalRoomId(newRoomId);
+        router.replace(`/?room=${newRoomId}`);
+      };
+
+      websocket.onclose = () => {
+        setIsConnected(false);
+        setWs(null);
+        setParticipants([]);
+
+        if (intentionalLeave.current) {
+          intentionalLeave.current = false;
+          roomIdRef.current = "";
+          setRoomId(null);
+          setLocalRoomId("");
+          toast.info("Disconnected from room");
+          return;
+        }
+
+        if (
+          reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS &&
+          roomIdRef.current
+        ) {
+          const delay =
+            BASE_RECONNECT_DELAY_MS * 2 ** reconnectAttempts.current;
+          reconnectAttempts.current += 1;
+          toast.info(`Reconnecting in ${delay / 1000}s...`);
+          reconnectTimer.current = setTimeout(() => {
+            connectWebSocket(roomIdRef.current);
+          }, delay);
+        } else {
+          roomIdRef.current = "";
+          setRoomId(null);
+          setLocalRoomId("");
+          toast.error("Connection lost. Please rejoin the room.");
+        }
+      };
+
+      websocket.onerror = () => {
+        toast.error("WebSocket connection failed");
+      };
+    },
+    [
+      token,
+      router,
+      setIsConnected,
+      setWs,
+      setRoomId,
+      setParticipants,
+    ]
+  );
+
+  const joinRoom = useCallback(
+    (newRoomId: string) => {
+      intentionalLeave.current = false;
+      clearReconnectTimer();
+      setLocalRoomId(newRoomId);
+      connectWebSocket(newRoomId);
+    },
+    [connectWebSocket]
+  );
 
   useEffect(() => {
     if (roomFromUrl && isLoggedIn && token && !isConnected) {
@@ -35,42 +134,11 @@ function CreateRoomDialogContent() {
     } else if (roomFromUrl && !isLoggedIn) {
       toast.error("You must be logged in to join this room");
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomFromUrl, isLoggedIn, token]);
+  }, [roomFromUrl, isLoggedIn, token, isConnected, joinRoom]);
 
-  const joinRoom = async (newRoomId: string) => {
-    setLocalRoomId(newRoomId);
-
-    const websocket = new WebSocket(
-      `ws://localhost:8080?token=${token}&room=${newRoomId}`
-    );
-
-    websocket.onopen = () => {
-      websocket.send(JSON.stringify({ type: "JOIN_ROOM", roomId: newRoomId }));
-      setIsConnected(true);
-      setWs(websocket);
-      setRoomId(newRoomId);
-      router.replace(`/?room=${newRoomId}`);
-    };
-
-    websocket.onclose = () => {
-      setIsConnected(false);
-      setWs(null);
-      setRoomId(null);
-      setLocalRoomId("");
-      toast.info("Disconnected from room");
-    };
-
-    websocket.onerror = () => {
-      setIsConnected(false);
-      setWs(null);
-      setRoomId(null);
-      setLocalRoomId("");
-      toast.error("WebSocket connection failed");
-    };
-
-    setWs(websocket);
-  };
+  useEffect(() => {
+    return () => clearReconnectTimer();
+  }, []);
 
   const handleStartSession = async () => {
     if (!isLoggedIn) return toast.error("Please login first!");
@@ -78,7 +146,7 @@ function CreateRoomDialogContent() {
 
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/create-room`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/rooms/create-room`,
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -89,8 +157,12 @@ function CreateRoomDialogContent() {
       if (!data.success) return toast.error("Failed to create room");
 
       joinRoom(data.data.id);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to start session");
+    } catch (err: unknown) {
+      const message =
+        axios.isAxiosError(err) && err.response?.data?.message
+          ? String(err.response.data.message)
+          : "Failed to start session";
+      toast.error(message);
     }
   };
 
@@ -102,11 +174,15 @@ function CreateRoomDialogContent() {
 
   const handleCloseSession = () => {
     if (ws && localRoomId) {
+      intentionalLeave.current = true;
+      clearReconnectTimer();
+      roomIdRef.current = "";
       ws.send(JSON.stringify({ type: "LEAVE_ROOM", roomId: localRoomId }));
       ws.close();
       setIsConnected(false);
       setWs(null);
       setRoomId(null);
+      setParticipants([]);
       setLocalRoomId("");
       router.replace(`/`);
       toast.success("Left the room successfully!");
