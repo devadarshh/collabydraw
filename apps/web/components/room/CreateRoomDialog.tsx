@@ -13,6 +13,7 @@ import {
 } from "../ui/dialog";
 import { useRoomDialog } from "@/hooks/websocket/useRoomDialog";
 import { useAuthStore } from "@/hooks/auth/useAuthStore";
+import { useDemoSession } from "@/hooks/auth/useDemoSession";
 import { useWsStore } from "@/hooks/websocket/useWsStore";
 import {
   intentionalLeaveRef,
@@ -26,7 +27,8 @@ const BASE_RECONNECT_DELAY_MS = 1000;
 
 function CreateRoomDialogContent() {
   const { open, setOpen } = useRoomDialog();
-  const { isLoggedIn, token } = useAuthStore();
+  const { token } = useAuthStore();
+  const { joinAsGuest } = useDemoSession();
   const {
     ws,
     isConnected,
@@ -45,6 +47,7 @@ function CreateRoomDialogContent() {
   const reconnectAttempts = useRef(0);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const roomIdRef = useRef<string>("");
+  const guestJoinAttempted = useRef(false);
 
   const clearReconnectTimer = () => {
     if (reconnectTimer.current) {
@@ -55,11 +58,12 @@ function CreateRoomDialogContent() {
 
   const connectWebSocket = useCallback(
     (newRoomId: string) => {
-      if (!token) return;
+      const currentToken = useAuthStore.getState().token;
+      if (!currentToken) return;
 
       const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080";
       const websocket = new WebSocket(
-        `${wsUrl}?token=${token}&room=${newRoomId}`
+        `${wsUrl}?token=${currentToken}&room=${newRoomId}`
       );
 
       websocket.onopen = () => {
@@ -113,7 +117,6 @@ function CreateRoomDialogContent() {
       };
     },
     [
-      token,
       router,
       setIsConnected,
       setWs,
@@ -133,20 +136,49 @@ function CreateRoomDialogContent() {
   );
 
   useEffect(() => {
-    if (roomFromUrl && isLoggedIn && token && !isConnected) {
+    if (roomFromUrl && token && !isConnected) {
       joinRoom(roomFromUrl);
-    } else if (roomFromUrl && !isLoggedIn) {
-      toast.error("You must be logged in to join this room");
+      return;
     }
-  }, [roomFromUrl, isLoggedIn, token, isConnected, joinRoom]);
+
+    if (
+      roomFromUrl &&
+      !token &&
+      !isConnected &&
+      !guestJoinAttempted.current
+    ) {
+      guestJoinAttempted.current = true;
+      joinAsGuest(roomFromUrl)
+        .then((roomId) => joinRoom(roomId))
+        .catch((err: unknown) => {
+          guestJoinAttempted.current = false;
+          const message =
+            axios.isAxiosError(err) && err.response?.data?.message
+              ? String(err.response.data.message)
+              : "Failed to join room as guest";
+          toast.error(message);
+        });
+    }
+  }, [roomFromUrl, token, isConnected, joinRoom, joinAsGuest]);
 
   useEffect(() => {
     return () => clearReconnectTimer();
   }, []);
 
   const handleStartSession = async () => {
-    if (!isLoggedIn) return toast.error("Please login first!");
-    if (!token) return toast.error("No JWT token found");
+    if (!token) {
+      try {
+        const roomId = await joinAsGuest();
+        joinRoom(roomId);
+      } catch (err: unknown) {
+        const message =
+          axios.isAxiosError(err) && err.response?.data?.message
+            ? String(err.response.data.message)
+            : "Failed to start demo session";
+        toast.error(message);
+      }
+      return;
+    }
 
     try {
       const res = await axios.post(
@@ -191,11 +223,8 @@ function CreateRoomDialogContent() {
             Live Collaboration
           </DialogTitle>
           <p className="text-center text-sm sm:text-base leading-relaxed text-gray-600 dark:text-gray-300">
-            Invite people to collaborate in real-time. Session is{" "}
-            <span className="font-semibold text-color-primary">
-              end-to-end encrypted
-            </span>
-            .
+            Invite people to collaborate in real-time. No account needed for
+            demo — share the room link and draw together.
           </p>
         </DialogHeader>
 

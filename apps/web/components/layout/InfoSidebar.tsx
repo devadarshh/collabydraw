@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Upload,
@@ -16,16 +16,28 @@ import {
   Trash2,
   LogOut,
   Circle,
+  Sparkles,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { useTheme } from "next-themes";
 import { useCanvasStore } from "@/hooks/canvas/useCanvasStore";
 import { useRoomDialog } from "@/hooks/websocket/useRoomDialog";
 import { useAuthStore } from "@/hooks/auth/useAuthStore";
+import { useDemoSession } from "@/hooks/auth/useDemoSession";
 import { useWsStore } from "@/hooks/websocket/useWsStore";
 import { useLeaveRoom } from "@/hooks/websocket/useRoomSession";
 import { toast } from "sonner";
@@ -56,14 +68,31 @@ const socialLinks = [
 ];
 
 export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
-  const { user, isLoggedIn, logout } = useAuthStore();
+  const { user, isLoggedIn, isGuest, logout } = useAuthStore();
+  const { startDemo, isLoading: isDemoLoading } = useDemoSession();
   const { theme, setTheme } = useTheme();
-  const { backgroundColor, setBackgroundColor, clearCanvas } = useCanvasStore();
+  const {
+    canvas,
+    backgroundColor,
+    setBackgroundColor,
+    clearCanvas,
+    exportDrawing,
+    importDrawing,
+  } = useCanvasStore();
   const { setOpen } = useRoomDialog();
   const { roomId, isConnected, participants } = useWsStore();
   const { leaveRoom } = useLeaveRoom();
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [hexInput, setHexInput] = useState(backgroundColor);
+  const pendingFileRef = useRef<File | null>(null);
+
   const colorOptions = ["#ffffff", "#f0f0f0", "#121212", "#fef3c7", "#d1fae5"];
+
+  useEffect(() => {
+    setHexInput(backgroundColor);
+  }, [backgroundColor]);
 
   const handleLogout = () => {
     if (isConnected) {
@@ -71,11 +100,47 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
     }
     logout();
     if (!isConnected) {
-      toast.success("Logged out successfully!");
+      toast.success(isGuest ? "Demo ended" : "Logged out successfully!");
     }
   };
 
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
+
+  const handleImportClick = () => {
+    if (isConnected) {
+      toast.error("Leave the live session before importing a drawing.");
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    const hasExistingContent = (canvas?.getObjects().length ?? 0) > 0;
+    if (hasExistingContent) {
+      pendingFileRef.current = file;
+      setImportDialogOpen(true);
+      return;
+    }
+
+    await importDrawing(file);
+  };
+
+  const confirmImport = async () => {
+    if (pendingFileRef.current) {
+      await importDrawing(pendingFileRef.current);
+      pendingFileRef.current = null;
+    }
+    setImportDialogOpen(false);
+  };
+
+  const cancelImport = () => {
+    pendingFileRef.current = null;
+    setImportDialogOpen(false);
+  };
 
   const SectionTitle: React.FC<{ children: React.ReactNode }> = ({
     children,
@@ -88,11 +153,11 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
   return (
     <div
       className={cn(
-        "flex flex-col w-72 sm:w-80 h-screen bg-white dark:bg-[#1e1e1e] border-l border-[#605ebc33] p-6 justify-between text-[#111] dark:text-[#eee]",
+        "flex flex-col h-full min-h-0 w-72 sm:w-80 bg-white dark:bg-[#1e1e1e] border-l border-[#605ebc33] text-[#111] dark:text-[#eee]",
         className
       )}
     >
-      <div className="space-y-4 mt-2">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-6 space-y-4 overscroll-contain">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Settings2 className="w-5 h-5 text-[#605ebc]" />
@@ -104,8 +169,41 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
         </div>
 
         <div className="flex flex-col gap-2 mb-4">
-          {!isLoggedIn ? (
+          {isGuest ? (
+            <div className="flex flex-col border rounded-lg px-3 py-2 gap-2 border-[#8d8bd6] bg-[#8d8bd611]">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#605ebc]" />
+                <span className="text-sm font-semibold text-[#605ebc]">
+                  Demo Mode
+                </span>
+              </div>
+              <span className="text-sm text-[#333] dark:text-[#ccc]">
+                {user?.name}
+              </span>
+              <p className="text-xs text-[#666] dark:text-[#aaa]">
+                Create an account to save your work permanently.
+              </p>
+              <Link href="/auth/signup" passHref>
+                <Button className="w-full cursor-pointer">Create Account</Button>
+              </Link>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="w-full border-[#605ebc] text-[#605ebc] hover:bg-[#8d8bd622] cursor-pointer"
+              >
+                Exit Demo
+              </Button>
+            </div>
+          ) : !isLoggedIn ? (
             <>
+              <Button
+                onClick={() => startDemo()}
+                disabled={isDemoLoading}
+                className="w-full cursor-pointer bg-[#8d8bd6] hover:bg-[#7a78c4] text-white"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                {isDemoLoading ? "Starting demo..." : "Try Demo"}
+              </Button>
               <Link href="/auth/signup" passHref>
                 <Button className="w-full cursor-pointer">
                   Create Account
@@ -178,16 +276,23 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
 
         <section>
           <SectionTitle>File Operations</SectionTitle>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,application/json"
+            className="hidden"
+            onChange={handleFileChange}
+          />
           <div className="flex flex-col gap-2">
             <button
-              onClick={() => toast.info("Import Drawing – Coming soon 🚀")}
+              onClick={handleImportClick}
               className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer"
             >
               <Upload className="w-4 h-4 text-[#605ebc]" />
               Import Drawing
             </button>
             <button
-              onClick={() => toast.info("Export Drawing – Coming soon 🚀")}
+              onClick={exportDrawing}
               className="flex items-center gap-2 w-full py-2 px-3 text-sm rounded-lg border border-[#605ebc33] hover:bg-[#8d8bd622] transition-all cursor-pointer"
             >
               <Download className="w-4 h-4 text-[#605ebc]" />
@@ -216,13 +321,21 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
           <div className="flex items-center gap-2">
             <input
               type="color"
+              value={backgroundColor}
               className="w-6 h-6 rounded border border-[#605ebc33] cursor-pointer"
               onChange={(e) => setBackgroundColor(e.target.value)}
             />
             <Input
               className="text-xs flex-1 border border-[#605ebc33]"
               placeholder="#ffffff"
-              onBlur={(e) => setBackgroundColor(e.target.value)}
+              value={hexInput}
+              onChange={(e) => setHexInput(e.target.value)}
+              onBlur={() => setBackgroundColor(hexInput)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setBackgroundColor(hexInput);
+                }
+              }}
             />
           </div>
         </section>
@@ -281,6 +394,30 @@ export const InfoSidebar: React.FC<InfoSidebarProps> = ({ className }) => {
           </div>
         </section>
       </div>
+
+      <AlertDialog
+        open={importDialogOpen}
+        onOpenChange={(open) => {
+          setImportDialogOpen(open);
+          if (!open) pendingFileRef.current = null;
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Replace current drawing?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Importing will replace everything on the canvas. This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelImport}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmImport}>
+              Import
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

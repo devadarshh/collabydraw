@@ -28,7 +28,7 @@ const LOCAL_CANVAS_KEY = "fabric-canvas-local";
 
 function CanvasBoardContent() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const { canvas, setCanvas } = useCanvasStore();
+  const { canvas, setCanvas, setBackgroundColor } = useCanvasStore();
   const { resolvedTheme } = useTheme();
   const { isConnected } = useWsStore();
   const searchParams = useSearchParams();
@@ -53,15 +53,20 @@ function CanvasBoardContent() {
     if (!canvasRef.current) return;
 
     const parent = canvasRef.current.parentElement!;
+    const storedBg = useCanvasStore.getState().backgroundColor;
+    const defaultBg = resolvedTheme === "dark" ? "#121212" : "#ffffff";
+    const initialBg = storedBg !== "#ffffff" ? storedBg : defaultBg;
+
     const initCanvas = new fabric.Canvas(canvasRef.current, {
       width: parent.clientWidth,
       height: parent.clientHeight,
       selection: true,
-      backgroundColor: resolvedTheme === "dark" ? "#121212" : "#ffffff",
+      backgroundColor: initialBg,
     });
 
     applyFabricConfig(initCanvas);
     setCanvas(initCanvas);
+    setBackgroundColor(initialBg);
 
     void loadExcalifont().then(() => {
       initCanvas.requestRenderAll();
@@ -71,6 +76,11 @@ function CanvasBoardContent() {
       const savedCanvas = localStorage.getItem(LOCAL_CANVAS_KEY);
       if (savedCanvas) {
         initCanvas.loadFromJSON(savedCanvas, () => {
+          const bg =
+            typeof initCanvas.backgroundColor === "string"
+              ? initCanvas.backgroundColor
+              : initialBg;
+          setBackgroundColor(bg);
           setTimeout(() => initCanvas.renderAll(), 0);
         });
       }
@@ -105,7 +115,7 @@ function CanvasBoardContent() {
       handleResize.cancel();
       initCanvas.dispose();
     };
-  }, [resolvedTheme, setCanvas, shouldUseLocalStorage]);
+  }, [resolvedTheme, setCanvas, setBackgroundColor, shouldUseLocalStorage]);
 
   const handleAddShapes = useHandleAddShapes({
     canvas,

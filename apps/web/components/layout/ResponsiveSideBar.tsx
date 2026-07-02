@@ -23,16 +23,16 @@ export function ResponsiveSidebar({
     <>
       <div
         className={cn(
-          "fixed left-0 right-0 bottom-0 z-40 h-3/4 shadow-lg overflow-y-auto bg-white dark:bg-[#1e1e1e] border-t border-[#605ebc33] transition-transform duration-300 sm:hidden",
+          "fixed left-0 right-0 bottom-0 z-40 h-3/4 shadow-lg overflow-hidden bg-white dark:bg-[#1e1e1e] border-t border-[#605ebc33] transition-transform duration-300 sm:hidden",
           showSidebar ? "translate-y-0" : "translate-y-full"
         )}
       >
-        <InfoSidebar />
+        <InfoSidebar className="w-full border-l-0" />
       </div>
 
       <div
         className={cn(
-          "hidden sm:flex sm:flex-col sm:fixed sm:top-0 sm:right-0 sm:h-screen sm:w-80 z-40 transition-transform duration-300",
+          "hidden sm:flex sm:flex-col sm:fixed sm:top-0 sm:right-0 sm:h-screen sm:w-80 z-40 overflow-hidden transition-transform duration-300",
           showSidebar ? "translate-x-0" : "translate-x-full"
         )}
       >

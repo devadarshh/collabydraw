@@ -20,3 +20,7 @@ export const loginSchema = z.object({
 export const createRoomSchema = z.object({
   userId: z.string({ message: "Invalid id " }),
 });
+
+export const guestSessionSchema = z.object({
+  roomId: z.string().optional(),
+});

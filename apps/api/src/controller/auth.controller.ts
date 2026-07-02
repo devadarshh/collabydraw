@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { registerSchema, loginSchema } from "@repo/zod/schema";
+import crypto from "crypto";
+import { registerSchema, loginSchema, guestSessionSchema } from "@repo/zod/schema";
 import { prisma } from "@repo/db/prisma";
 import generateJWTToken from "@repo/jwt/generateJWT";
 
@@ -97,6 +98,73 @@ export const handleLoginUser = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("Sign In error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong",
+    });
+  }
+};
+
+export const handleGuestSession = async (req: Request, res: Response) => {
+  try {
+    const { roomId } = req.body;
+    const parsed = guestSessionSchema.safeParse({ roomId });
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Validation Failed",
+        errors: parsed.error,
+      });
+    }
+
+    if (roomId) {
+      const existingRoom = await prisma.room.findUnique({
+        where: { id: roomId },
+      });
+      if (!existingRoom) {
+        return res.status(404).json({
+          success: false,
+          message: "Room not found",
+        });
+      }
+    }
+
+    const guestNumber = Math.floor(1000 + Math.random() * 9000);
+    const name = `Guest ${guestNumber}`;
+    const email = `guest-${crypto.randomUUID()}@demo.collabydraw.local`;
+    const hashedPassword = await bcrypt.hash(crypto.randomUUID(), 10);
+
+    const guestUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+      },
+    });
+
+    let sessionRoomId = roomId;
+    if (!sessionRoomId) {
+      const newRoom = await prisma.room.create({
+        data: { adminId: guestUser.id },
+      });
+      sessionRoomId = newRoom.id;
+    }
+
+    const token = generateJWTToken({
+      id: guestUser.id,
+      email: guestUser.email,
+      name: guestUser.name,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Guest session created",
+      data: { id: guestUser.id, name: guestUser.name, email: guestUser.email },
+      token,
+      roomId: sessionRoomId,
+    });
+  } catch (error) {
+    console.error("Guest session error:", error);
     return res.status(500).json({
       success: false,
       message: "Something went wrong",

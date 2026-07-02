@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useFirstVisit } from "@/hooks/useFirstVisit";
+import { useDemoSession } from "@/hooks/auth/useDemoSession";
 
 const WelcomeOverlay = dynamic(
   async () =>
@@ -34,12 +35,23 @@ const CanvasBoard = dynamic(
 
 const CanvasPage: React.FC = () => {
   const { isFirstVisit, dismiss } = useFirstVisit("hasSeenWelcome");
+  const { startDemo, isLoading: isDemoLoading } = useDemoSession();
+
+  const handleTryDemo = () => {
+    startDemo({ dismissWelcome: dismiss });
+  };
 
   return (
     <div className="flex h-screen w-screen overflow-hidden">
       <div className="flex-1 relative">
         <CanvasBoard />
-        {isFirstVisit && <WelcomeOverlay onDismiss={dismiss} />}
+        {isFirstVisit && (
+          <WelcomeOverlay
+            onDismiss={dismiss}
+            onTryDemo={handleTryDemo}
+            isDemoLoading={isDemoLoading}
+          />
+        )}
       </div>
     </div>
   );

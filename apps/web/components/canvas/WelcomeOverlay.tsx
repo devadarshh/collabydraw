@@ -1,15 +1,19 @@
 "use client";
 
 import React from "react";
-import { Settings, Square, Circle } from "lucide-react";
+import { Settings, Square, Circle, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
 
 interface WelcomeOverlayProps {
   onDismiss: () => void;
+  onTryDemo: () => void;
+  isDemoLoading?: boolean;
 }
 
 export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
   onDismiss,
+  onTryDemo,
+  isDemoLoading = false,
 }) => {
   const primaryColor = "bg-[#8d8bd6] text-[#8d8bd6]";
 
@@ -28,7 +32,7 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
         </div>
 
         <p className="mb-6 text-lg sm:text-xl md:text-2xl font-semibold text-gray-700">
-          Draw, collaborate & save locally.
+          Draw, collaborate & share in real time.
         </p>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -61,11 +65,20 @@ export const WelcomeOverlay: React.FC<WelcomeOverlayProps> = ({
           </div>
         </div>
 
-        <div className="mt-4 text-center">
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Button
+            onClick={onTryDemo}
+            disabled={isDemoLoading}
+            className="px-6 py-2 text-white font-semibold rounded shadow hover:brightness-110 transition cursor-pointer min-w-[160px] flex items-center justify-center"
+            style={{ backgroundColor: "#605ebc" }}
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            {isDemoLoading ? "Starting..." : "Try Demo"}
+          </Button>
           <Button
             onClick={onDismiss}
-            className="px-6 py-2 text-white font-semibold rounded shadow hover:brightness-110 transition cursor-pointer"
-            style={{ backgroundColor: "#8d8bd6" }}
+            variant="outline"
+            className="px-6 py-2 font-semibold rounded shadow transition cursor-pointer min-w-[160px] border-[#8d8bd6] text-[#8d8bd6] hover:bg-[#8d8bd622]"
           >
             Start Drawing
           </Button>
